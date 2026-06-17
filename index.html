@@ -21,6 +21,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Spielboard — Alpha Tester Download</title>
 <meta name="description" content="Download the Spielboard alpha — a node-based generative-AI canvas inside Premiere Pro, After Effects, and DaVinci Resolve." />
+<link rel="icon" type="image/svg+xml" href="assets/logo.svg" />
 <style>
   /* ——— Premium dark theme (brand is dark-dominant, to match the
      Spielboard panel and the dark-only NLEs). Deep charcoal surfaces,
@@ -73,6 +74,13 @@
   }
   .mark-lg { width: 76px; height: 76px; }
   .mark-sm { width: 22px; height: 22px; border-radius: 28%; box-shadow: none; }
+
+  /* ——— Hero lockup: David's horizontal mark + wordmark. White-ink SVG, so it
+     reads on the dark hero as-is. Width-driven, height auto keeps it crisp. ——— */
+  .hero-lockup {
+    display: block; width: clamp(260px, 42vw, 420px); height: auto;
+    margin: 0 auto 4px;
+  }
 
   /* ——— Nav ——— */
   nav.top {
@@ -225,7 +233,7 @@
 </nav>
 
 <header class="hero" id="top">
-  <span class="mark mark-lg" role="img" aria-label="Spielboard logo"></span>
+  <img class="hero-lockup" src="assets/logo-lockup.svg" alt="Spielboard" />
   <div class="pill">Private Alpha</div>
   <h1>Generative AI, right <span class="grad">inside your editor.</span></h1>
   <p class="lede">A node-based canvas for AI image and video — in Premiere Pro, After Effects, and DaVinci Resolve.</p>
