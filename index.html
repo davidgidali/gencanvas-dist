@@ -154,6 +154,13 @@
   .lockup.is-broken img { display: none; }
   .lockup.is-broken .fallback { display: inline-block; }
 
+  /* ——— Prominent hero lockup (matches /beta's hero treatment): David's
+     horizontal mark + wordmark, centered + large above the tagline. ——— */
+  .hero-lockup {
+    display: block; width: clamp(260px, 42vw, 420px); height: auto;
+    margin: 0 auto 18px;
+  }
+
   /* ——— Scaled scene wrapper (keeps each graphic crisp + responsive) ——— */
   .stagefit {
     position: relative; z-index: 5;
@@ -328,13 +335,6 @@
     box-shadow: 0 0 0 1px rgba(108,92,255,0.4), 0 6px 16px rgba(0,0,0,0.5);
   }
   .tl-clip video, .tl-clip img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .tl-clip .cliplabel {
-    position: absolute; left: 0; right: 0; bottom: 0; padding: 1px 6px;
-    font-size: 9px; color: #fff; font-weight: 600;
-    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.7));
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
   .tl-audio { position: absolute; border-radius: 6px; background: #15233a; border: 1px solid #2b446b; overflow: hidden; }
   .tl-audio svg { width: 100%; height: 100%; display: block; }
   .playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff5a6e; z-index: 6; }
@@ -677,6 +677,7 @@
   @media (max-width: 760px) {
     .stagefit { padding-top: 44px; align-items: flex-start; }
     .copy { padding: 2px 20px 22px; }
+    .hero-lockup { margin-bottom: 12px; }
     .copy .pill { margin-bottom: 10px; }
     .copy h1 { font-size: clamp(24px, 7.2vw, 34px); }
     .copy p.sub { font-size: clamp(14px, 3.7vw, 16px); margin-top: 10px; }
@@ -783,7 +784,6 @@
               <div class="tl-label">V1</div>
               <div class="tl-clip tl-filmstrip clip-snap">
                 <img class="fs" src="/assets/demo/placeholder-filmstrip.jpg" alt="clip filmstrip" />
-                <div class="cliplabel">placeholder-clip.mp4</div>
               </div>
             </div>
             <div class="tl-track">
@@ -877,7 +877,6 @@
             <div class="tl-track"><div class="tl-label">V1</div>
               <div class="tl-clip tl-filmstrip clip-snap">
                 <img class="fs" src="/assets/demo/placeholder-filmstrip.jpg" alt="clip filmstrip" />
-                <div class="cliplabel">placeholder-clip.mp4</div>
               </div>
             </div>
             <div class="tl-track"><div class="tl-label">A1</div>
@@ -905,6 +904,7 @@
 
   <!-- Tagline + CTA -->
   <div class="copy">
+    <img class="hero-lockup" src="/assets/logo-lockup.svg" alt="Spielboard" />
     <span class="pill">Private beta</span>
     <h1>Generative video, <span class="grad">natively in your timeline.</span></h1>
     <p class="sub">Node-based AI generation with native input/output to Premiere&nbsp;Pro, After&nbsp;Effects &amp; DaVinci&nbsp;Resolve.</p>
