@@ -33,11 +33,18 @@
   Only ONE scene renders at a time (the other is display:none).
 
   REAL ASSETS (swap these to drop in real footage — see landing/README.md):
-    • /assets/demo/placeholder-still.jpg   — the image-gen node's revealed still
-    • /assets/demo/placeholder-clip.mp4    — the result clip that plays in the
-      (+ .webm, + -poster.jpg)               video node, the V1 timeline thumb,
-                                             and the dragged clip
-  These are real <img>/<video> elements (root-absolute paths), NOT CSS fakes.
+    • /assets/demo/placeholder-still.jpg     — the image-gen node's revealed still
+    • /assets/demo/placeholder-clip.mp4      — the result clip that PLAYS in the
+      (+ .webm, + -poster.jpg)                 video node (only). .webm/.mp4 sources,
+                                               -poster.jpg is the video poster.
+    • /assets/demo/placeholder-filmstrip.jpg — a horizontal strip of 6 sequential
+                                               keyframes sampled across the clip;
+                                               renders as the V1 TIMELINE clip and
+                                               the dragged clip (footage-on-a-track).
+  The derived .webm / -poster.jpg / -filmstrip.jpg are generated from the .mp4 with
+  ffmpeg (the strip = 6 evenly-spaced frames, each center-cropped ~0.9:1 + 2px dark
+  dividers, tiled 6×1; CSS adds subtle sprocket perforations). These are real
+  <img>/<video> elements (root-absolute paths), NOT CSS fakes.
 
   PRODUCT FIDELITY: the node cards, sockets and wires replicate the real
   Spielboard canvas (packages/canvas-ui) — node bg #131315, 1px rgba-white
@@ -342,6 +349,18 @@
     border-radius: 6px; overflow: hidden; border: 1px solid var(--accent); opacity: 0;
     box-shadow: 0 14px 30px rgba(0,0,0,0.6); }
   .drag-clip video, .drag-clip img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* — Film-strip clip: the V1 (and dragged) clip renders as a horizontal strip of
+     sequential keyframes (placeholder-filmstrip.jpg, 6 frames w/ baked dividers).
+     A subtle sprocket-perforation overlay on top + bottom edges reads it as film
+     without eating the short clip height; it's a CSS overlay so it scales clean. */
+  .tl-filmstrip img { image-rendering: auto; }
+  .tl-filmstrip::after {
+    content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 4;
+    background:
+      repeating-linear-gradient(90deg, transparent 0 7px, rgba(0,0,0,0.6) 7px 11px) top/100% 3px no-repeat,
+      repeating-linear-gradient(90deg, transparent 0 7px, rgba(0,0,0,0.6) 7px 11px) bottom/100% 3px no-repeat;
+  }
 
   /* ===========================================================
      DESKTOP scene geometry (1080×560)
@@ -762,11 +781,8 @@
             <div class="tl-track"><div class="tl-label">V2</div></div>
             <div class="tl-track">
               <div class="tl-label">V1</div>
-              <div class="tl-clip clip-snap">
-                <video class="demo-clip" muted loop playsinline autoplay preload="auto" poster="/assets/demo/placeholder-poster.jpg">
-                  <source src="/assets/demo/placeholder-clip.webm" type="video/webm" />
-                  <source src="/assets/demo/placeholder-clip.mp4" type="video/mp4" />
-                </video>
+              <div class="tl-clip tl-filmstrip clip-snap">
+                <img class="fs" src="/assets/demo/placeholder-filmstrip.jpg" alt="clip filmstrip" />
                 <div class="cliplabel">placeholder-clip.mp4</div>
               </div>
             </div>
@@ -783,11 +799,8 @@
         </div>
 
         <!-- Dragged clip + cursor -->
-        <div class="drag-clip">
-          <video class="demo-clip" muted loop playsinline autoplay preload="auto" poster="/assets/demo/placeholder-poster.jpg">
-            <source src="/assets/demo/placeholder-clip.webm" type="video/webm" />
-            <source src="/assets/demo/placeholder-clip.mp4" type="video/mp4" />
-          </video>
+        <div class="drag-clip tl-filmstrip">
+          <img class="fs" src="/assets/demo/placeholder-filmstrip.jpg" alt="" />
         </div>
         <svg class="cursor" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 3 L19 12 L12 13 L9 20 Z" fill="#ffffff" stroke="#0b0b0e" stroke-width="1.3" stroke-linejoin="round"/>
@@ -862,11 +875,8 @@
           </div>
           <div class="tl-rows">
             <div class="tl-track"><div class="tl-label">V1</div>
-              <div class="tl-clip clip-snap">
-                <video class="demo-clip" muted loop playsinline autoplay preload="auto" poster="/assets/demo/placeholder-poster.jpg">
-                  <source src="/assets/demo/placeholder-clip.webm" type="video/webm" />
-                  <source src="/assets/demo/placeholder-clip.mp4" type="video/mp4" />
-                </video>
+              <div class="tl-clip tl-filmstrip clip-snap">
+                <img class="fs" src="/assets/demo/placeholder-filmstrip.jpg" alt="clip filmstrip" />
                 <div class="cliplabel">placeholder-clip.mp4</div>
               </div>
             </div>
@@ -882,11 +892,8 @@
         </div>
 
         <!-- Dragged clip + cursor -->
-        <div class="drag-clip">
-          <video class="demo-clip" muted loop playsinline autoplay preload="auto" poster="/assets/demo/placeholder-poster.jpg">
-            <source src="/assets/demo/placeholder-clip.webm" type="video/webm" />
-            <source src="/assets/demo/placeholder-clip.mp4" type="video/mp4" />
-          </video>
+        <div class="drag-clip tl-filmstrip">
+          <img class="fs" src="/assets/demo/placeholder-filmstrip.jpg" alt="" />
         </div>
         <svg class="cursor" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M5 3 L19 12 L12 13 L9 20 Z" fill="#ffffff" stroke="#0b0b0e" stroke-width="1.3" stroke-linejoin="round"/>
