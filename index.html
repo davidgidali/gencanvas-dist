@@ -12,8 +12,14 @@
     4. Logo                          -> drop assets/logo.svg (or .png) in;
                                         see landing/assets/README.md. Until then
                                         the CSS-gradient mark shows as fallback.
-  Everything is hardcoded (no JS required) so the page works offline / on Pages.
-  Disclosures use native <details> — pure CSS, no script.
+  Mostly hardcoded so the page works offline / on Pages; disclosures use native
+  <details> (pure CSS). The ONE bit of script is the email gate in #download: it
+  POSTs the email to the telemetry Worker's /register route, which returns a
+  stable tester code and reveals the download links. If the Worker is unreachable
+  the gate shows an error + a fallback contact — nothing else on the page needs JS.
+
+  WORKER URL: the gate calls https://gencanvas-telemetry.gencanvas.workers.dev
+  (see GATE_WORKER in the <script> at the bottom). Same Worker as telemetry/reports.
 -->
 <html lang="en">
 <head>
@@ -166,6 +172,37 @@
   .dl-card .meta { margin-top: 18px; font-size: 13px; color: var(--muted-soft); }
   .dl-all { text-align: center; margin-top: 40px; font-size: 16px; }
 
+  /* ——— Email gate (unlocks the downloads + reveals the tester code) ——— */
+  .gate { max-width: 520px; margin: 48px auto 0; text-align: center; }
+  .gate-form { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .gate-form input[type="email"] {
+    flex: 1 1 260px; min-width: 0;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 980px;
+    padding: 13px 22px; color: var(--text); font-size: 16px; font-family: inherit;
+  }
+  .gate-form input[type="email"]::placeholder { color: var(--muted-soft); }
+  .gate-form input[type="email"]:focus { outline: none; border-color: var(--accent); }
+  .gate .btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
+  .gate-privacy { margin: 16px 0 0; font-size: 13px; color: var(--muted-soft); }
+  .gate-error { margin: 14px auto 0; max-width: 440px; font-size: 14px; color: #ff8b94; line-height: 1.5; }
+  .gate-error a { color: inherit; text-decoration: underline; }
+
+  .code-block {
+    max-width: 560px; margin: 44px auto 0; text-align: center;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 30px 32px;
+  }
+  .code-block .kicker { font-size: 13px; font-weight: 600; color: var(--muted-soft); letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 16px; }
+  .code-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .tester-code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 28px; font-weight: 600; letter-spacing: 0.14em; color: var(--text);
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 22px; user-select: all;
+  }
+  .code-hint { margin: 20px 0 0; font-size: 14px; color: var(--muted); line-height: 1.55; }
+  .code-hint strong { color: var(--text); font-weight: 600; }
+
   /* ——— Get started / Good to know: quiet disclosures ——— */
   details.disc {
     border-top: 1px solid var(--border); padding: 4px 0;
@@ -240,8 +277,8 @@
   <h1>Generative AI, right <span class="grad">inside your editor.</span></h1>
   <p class="lede">A node-based canvas for AI image and video — in Premiere Pro, After Effects, and DaVinci Resolve.</p>
   <div class="cta">
-    <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-tester.zip">Download for your editor</a>
-    <a class="btn btn-secondary btn-arrow" href="#download">See all downloads</a>
+    <a class="btn btn-primary" href="#download">Get access</a>
+    <a class="btn btn-secondary btn-arrow" href="#download">How it works</a>
   </div>
   <p class="fine">Premiere&nbsp;Pro &amp; After&nbsp;Effects on Windows and macOS · DaVinci&nbsp;Resolve&nbsp;Studio on Windows</p>
 </header>
@@ -271,30 +308,53 @@
   </div>
 </section>
 
-<!-- ——— Downloads ——— -->
+<!-- ——— Downloads (email-gated) ——— -->
 <section id="download">
   <div class="wrap">
-    <p class="eyebrow">Download</p>
-    <h2 class="section-title">Pick your editor.</h2>
-    <p class="section-sub">Both packages are free to install per-user — no admin required.</p>
+    <p class="eyebrow">Get access</p>
+    <h2 class="section-title">Enter your email to unlock.</h2>
+    <p class="section-sub">The alpha is invite-only. Drop your email to get your tester code and the downloads.</p>
 
-    <div class="dl-grid">
-      <div class="dl-card">
-        <p class="kicker">Windows &amp; macOS</p>
-        <h3>Premiere &amp; After Effects</h3>
-        <p>The CEP panel for Adobe. Works in Premiere&nbsp;Pro and After&nbsp;Effects 2024+.</p>
-        <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-tester.zip">Download&nbsp;·&nbsp;spielboard-tester.zip</a>
-        <p class="meta">Windows 10/11 &amp; macOS 12+</p>
-      </div>
-      <div class="dl-card">
-        <p class="kicker">Windows</p>
-        <h3>DaVinci Resolve Studio</h3>
-        <p>The Workflow Integration plugin. Resolve <strong>Studio</strong> only — the free edition can’t load it.</p>
-        <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-resolve.zip">Download&nbsp;·&nbsp;spielboard-resolve.zip</a>
-        <p class="meta">Windows · Resolve for Mac — coming soon</p>
-      </div>
+    <!-- Email gate (visible by default; hidden after a successful register). -->
+    <div id="gate" class="gate">
+      <form id="gate-form" class="gate-form" novalidate>
+        <input id="gate-email" type="email" autocomplete="email" required placeholder="you@studio.com" aria-label="Email address" />
+        <button class="btn btn-primary" type="submit">Get access</button>
+      </form>
+      <p class="gate-privacy">🔒 We use your email only for beta access and support — never shared, no marketing.</p>
+      <p id="gate-error" class="gate-error" hidden></p>
     </div>
-    <p class="dl-all"><a class="btn-arrow" href="https://github.com/davidgidali/gencanvas-dist/releases/latest">All downloads &amp; release notes</a></p>
+
+    <!-- Tester code (hidden until access is granted). -->
+    <div id="code-block" class="code-block" hidden>
+      <p class="kicker">Your tester code</p>
+      <div class="code-row">
+        <code id="tester-code" class="tester-code"></code>
+        <button id="copy-code" class="btn btn-secondary" type="button">Copy</button>
+      </div>
+      <p class="code-hint">Paste this into <strong>Spielboard → Settings → Tester code</strong> on first run — it's required to generate. Keep it handy; we've shown it here only this once.</p>
+    </div>
+
+    <!-- Downloads (hidden until access is granted). -->
+    <div id="downloads" hidden>
+      <div class="dl-grid">
+        <div class="dl-card">
+          <p class="kicker">Windows &amp; macOS</p>
+          <h3>Premiere &amp; After Effects</h3>
+          <p>The CEP panel for Adobe. Works in Premiere&nbsp;Pro and After&nbsp;Effects 2024+.</p>
+          <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-tester.zip">Download&nbsp;·&nbsp;spielboard-tester.zip</a>
+          <p class="meta">Windows 10/11 &amp; macOS 12+</p>
+        </div>
+        <div class="dl-card">
+          <p class="kicker">Windows</p>
+          <h3>DaVinci Resolve Studio</h3>
+          <p>The Workflow Integration plugin. Resolve <strong>Studio</strong> only — the free edition can’t load it.</p>
+          <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-resolve.zip">Download&nbsp;·&nbsp;spielboard-resolve.zip</a>
+          <p class="meta">Windows · Resolve for Mac — coming soon</p>
+        </div>
+      </div>
+      <p class="dl-all"><a class="btn-arrow" href="https://github.com/davidgidali/gencanvas-dist/releases/latest">All downloads &amp; release notes</a></p>
+    </div>
   </div>
 </section>
 
@@ -410,6 +470,107 @@
     <p class="copy">Spielboard · Private alpha. Thanks for helping shape it.</p>
   </div>
 </footer>
+
+<!-- ——— Email gate: POST email → Worker /register → reveal code + downloads ———
+     The ONLY script on the page. Degrades gracefully: any failure shows an inline
+     error with a fallback contact; the downloads simply stay locked. -->
+<script>
+(function () {
+  "use strict";
+  // Same Worker as telemetry/reports — the /register route mints a stable code.
+  var GATE_WORKER = "https://gencanvas-telemetry.gencanvas.workers.dev";
+  var CONTACT = "david.gidali@gmail.com";
+
+  var form = document.getElementById("gate-form");
+  if (!form) return;
+  var emailEl = document.getElementById("gate-email");
+  var errEl = document.getElementById("gate-error");
+  var gate = document.getElementById("gate");
+  var codeBlock = document.getElementById("code-block");
+  var downloads = document.getElementById("downloads");
+  var codeEl = document.getElementById("tester-code");
+  var copyBtn = document.getElementById("copy-code");
+
+  function showError(html) {
+    errEl.innerHTML = html;
+    errEl.hidden = false;
+  }
+  function contactSuffix() {
+    return ' If this keeps happening, email <a href="mailto:' + CONTACT + '">' + CONTACT + "</a>.";
+  }
+  function reveal(code) {
+    codeEl.textContent = code;
+    gate.hidden = true;
+    codeBlock.hidden = false;
+    downloads.hidden = false;
+    codeBlock.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errEl.hidden = true;
+    var email = (emailEl.value || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError("Please enter a valid email address.");
+      return;
+    }
+    var btn = form.querySelector("button");
+    var orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Working…";
+
+    fetch(GATE_WORKER + "/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      mode: "cors",
+      body: JSON.stringify({ email: email })
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (d) {
+          return { status: r.status, data: d };
+        });
+      })
+      .then(function (res) {
+        if (res.data && typeof res.data.code === "string" && res.data.code) {
+          reveal(res.data.code);
+        } else if (res.status === 429) {
+          showError("Too many attempts — please wait a minute and try again.");
+        } else {
+          var msg = res.data && res.data.error ? res.data.error : "Something went wrong";
+          showError(msg.charAt(0).toUpperCase() + msg.slice(1) + "." + contactSuffix());
+        }
+      })
+      .catch(function () {
+        showError("Couldn't reach the server — check your connection." + contactSuffix());
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = orig;
+      });
+  });
+
+  if (copyBtn) {
+    copyBtn.addEventListener("click", function () {
+      var code = codeEl.textContent || "";
+      var done = function () {
+        copyBtn.textContent = "Copied ✓";
+        setTimeout(function () { copyBtn.textContent = "Copy"; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(done, done);
+      } else {
+        // Fallback: select the code so the user can copy manually.
+        var range = document.createRange();
+        range.selectNodeContents(codeEl);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        done();
+      }
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
