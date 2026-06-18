@@ -1,53 +1,789 @@
 <!DOCTYPE html>
 <!--
-  Spielboard — ROOT redirect (spielboard.ai/ -> spielboard.ai/beta).
+  Spielboard — TEASER homepage (spielboard.ai/). Single self-contained file:
+  inline CSS + JS + SVG, no libraries, no build step, no external/hosted video.
 
-  There's no marketing homepage yet, so the site root simply forwards to the
-  email-gated beta landing page at /beta. Three independent fallbacks so it works
-  with or without JS and with or without redirects honored:
-    1. <meta http-equiv="refresh"> — instant, no-JS redirect.
-    2. <script> location.replace — JS fallback (replace() keeps history clean).
-    3. A visible "Go to the beta ->" link — manual fallback if both are blocked.
+  WHAT IT IS: a looping ~14s animated sequence that teases the differentiator —
+  node-based generative video with native I/O straight into your editing
+  timeline. Prompt node -> wire -> image-gen node -> wire -> video-gen node, then
+  a cursor drags the result clip down into a Premiere-style timeline (V2/V1/A1).
+  Tagline + CTA ("Get beta access ->", linking to /beta) resolve over it.
 
-  PUBLISHES TO: davidgidali/gencanvas-dist  ->  /index.html (repo root).
-  The gated page is /beta/index.html (source: landing/index.html). See README.md.
+  THE "RESULT VIDEO": there is NO mp4 dependency. The footage look (a neon-lit
+  rainy alley with a slow push-in) is rendered entirely in CSS — layered animated
+  gradients + falling-rain streaks + an inline SVG film-grain turbulence overlay.
+  The same component is reused, frozen, as the image-gen still and as the V1
+  timeline clip thumbnail. The ONLY external asset is the brand lockup at
+  /assets/logo-lockup.svg (root-absolute); if it's missing a CSS wordmark shows.
+
+  ANIMATION MODEL: the whole scene is driven by pure-CSS infinite @keyframes on a
+  14s loop (transform/opacity only — no layout thrash). The element's *default*
+  (un-animated) style IS the composed final frame, so when animations are
+  disabled the page shows a clean static poster. That makes the
+  prefers-reduced-motion and no-JS fallbacks automatic: reduced-motion sets
+  animation:none and the final frame shows. The CTA links to /beta and is always
+  present in the DOM regardless of animation state.
+
+  PUBLISHES TO: davidgidali/gencanvas-dist -> /index.html (repo root).
+  The email-gated beta page lives at /beta/ (source: landing/beta/index.html).
 -->
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta http-equiv="refresh" content="0; url=/beta" />
-<link rel="canonical" href="/beta" />
-<title>Spielboard — redirecting to the beta…</title>
-<meta name="description" content="Spielboard — redirecting to the beta tester download." />
-<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<title>Spielboard — Generative video, natively in your timeline</title>
+<meta name="description" content="Spielboard — a node-based canvas for AI image and video generation with native input/output to Premiere Pro, After Effects & DaVinci Resolve." />
+<link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
+<meta property="og:title" content="Spielboard — Generative video, natively in your timeline" />
+<meta property="og:description" content="Node-based AI generation with native I/O to Premiere Pro, After Effects & DaVinci Resolve." />
+<meta property="og:type" content="website" />
 <style>
-  :root { color-scheme: dark; }
+  :root {
+    color-scheme: dark;
+    --bg: #0b0b0e;
+    --bg-2: #0f0f15;
+    --panel: #14141b;
+    --panel-2: #181820;
+    --node: #16161f;
+    --border: #2a2a36;
+    --border-soft: #20202a;
+    --text: #f4f4f7;
+    --muted: #a6a6b2;
+    --muted-soft: #7e7e8a;
+    --accent: #6c5cff;
+    --accent-2: #a06bff;
+    --cyan: #5cc6ff;
+    --amber: #ffb742;
+    --loop: 14s;            /* master scene loop length */
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
   html { -webkit-text-size-adjust: 100%; }
   body {
-    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: #0b0b0e; color: #f4f4f7;
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif;
-    letter-spacing: -0.01em; -webkit-font-smoothing: antialiased; text-align: center;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
   }
-  .box { padding: 0 28px; }
-  p { color: #a6a6b2; margin: 0 0 18px; }
-  a {
-    display: inline-block; color: #fff; text-decoration: none; font-weight: 600;
-    background: linear-gradient(135deg, #6c5cff, #a06bff);
-    padding: 11px 20px; border-radius: 12px;
+  a { color: inherit; text-decoration: none; }
+
+  /* ——— Stage: full viewport, dark with a subtle dot grid ——— */
+  .hero {
+    position: relative;
+    min-height: 100svh;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background:
+      radial-gradient(1200px 700px at 70% -10%, rgba(108,92,255,0.12), transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, rgba(160,107,255,0.10), transparent 55%),
+      var(--bg);
+    overflow: hidden;
   }
-  a:hover { opacity: 0.92; }
+  /* dot grid background */
+  .hero::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,0.045) 1px, transparent 1.4px);
+    background-size: 26px 26px;
+    background-position: -13px -13px;
+    -webkit-mask-image: radial-gradient(120% 110% at 50% 35%, #000 55%, transparent 100%);
+    mask-image: radial-gradient(120% 110% at 50% 35%, #000 55%, transparent 100%);
+    pointer-events: none;
+  }
+
+  /* ——— Brand lockup, pinned top-left ——— */
+  .lockup {
+    position: absolute; top: 22px; left: 26px; z-index: 30;
+    display: inline-flex; align-items: center; gap: 9px;
+  }
+  .lockup img { height: 26px; width: auto; display: block; }
+  /* CSS wordmark fallback if the lockup SVG fails to load */
+  .lockup .fallback {
+    display: none; font-weight: 700; font-size: 19px; letter-spacing: 0.01em;
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lockup.is-broken img { display: none; }
+  .lockup.is-broken .fallback { display: inline-block; }
+
+  /* ——— Scaled scene wrapper (keeps the graphic crisp + responsive) ——— */
+  .stagefit {
+    position: relative; z-index: 5;
+    width: 100%; max-width: 100%;
+    flex: 1 1 auto;
+    display: flex; align-items: center; justify-content: center;
+    padding-top: 56px;
+    overflow: hidden;            /* contain the scaled scene's 1080px layout box */
+  }
+  .stagefit-inner {
+    position: relative;
+    width: var(--scene-w, 1080px);
+    height: var(--scene-h, 560px);
+    overflow: hidden;            /* clip the untransformed layout box so it can't widen the page */
+  }
+  .scene {
+    position: absolute; top: 0; left: 0;   /* out of flow: cannot widen ancestors */
+    width: 1080px; height: 560px;
+    transform: scale(var(--scale, 1));
+    transform-origin: top left;
+  }
+
+  /* ——— Node cards ——— */
+  .node {
+    position: absolute;
+    background: linear-gradient(180deg, var(--node), #121219);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.03);
+    padding: 0;
+    overflow: visible;
+  }
+  .node .nhead {
+    display: flex; align-items: center; gap: 7px;
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 12.5px; font-weight: 600; color: var(--text);
+  }
+  .node .dot { width: 9px; height: 9px; border-radius: 50%; flex: 0 0 auto; }
+  .node .nbody { padding: 12px; }
+
+  /* sockets */
+  .sock {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 11px; height: 11px; border-radius: 50%;
+    background: #0c0c12; border: 2px solid var(--muted-soft);
+  }
+  .sock.in  { left: -6px; }
+  .sock.out { right: -6px; }
+  .sock.in.lit  { border-color: var(--accent); box-shadow: 0 0 10px rgba(108,92,255,0.7); }
+  .sock.out.lit { border-color: var(--accent); box-shadow: 0 0 10px rgba(108,92,255,0.7); }
+
+  /* — Prompt node — */
+  #n-prompt { left: 16px; top: 120px; width: 244px; }
+  #n-prompt .dot { background: var(--accent); }
+  .prompt-text {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; line-height: 1.5; color: #d7d7e6;
+    background: #0c0c12; border: 1px solid var(--border-soft);
+    border-radius: 9px; padding: 10px 11px; min-height: 64px;
+  }
+  .prompt-text .caret {
+    display: inline-block; width: 7px; height: 15px; margin-left: 1px;
+    vertical-align: -2px; background: var(--accent);
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* — Image generation node — */
+  #n-image { left: 360px; top: 70px; width: 248px; }
+  #n-image .dot { background: var(--cyan); }
+  .canvas-area {
+    position: relative; width: 100%; height: 150px;
+    border-radius: 9px; overflow: hidden;
+    background: #08080c; border: 1px solid var(--border-soft);
+  }
+
+  /* — Video generation node — */
+  #n-video { left: 728px; top: 188px; width: 300px; }
+  #n-video .dot { background: var(--amber); }
+  .video-area { position: relative; width: 100%; height: 168px;
+    border-radius: 9px; overflow: hidden;
+    background: #08080c; border: 1px solid var(--border-soft); }
+
+  /* ——— Reusable CSS "footage": neon-lit rainy alley, slow push-in ——— */
+  .footage { position: absolute; inset: 0; overflow: hidden; background: #05050a; }
+  .footage .fin { position: absolute; inset: -8%; }     /* push-in wrapper */
+  .footage .sky {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, #0a0a16 0%, #15102b 42%, #241433 70%, #0c0a16 100%);
+  }
+  /* neon sign glows drifting */
+  .footage .glow {
+    position: absolute; border-radius: 50%; filter: blur(16px); opacity: 0.85;
+    mix-blend-mode: screen;
+  }
+  .footage .g1 { width: 60%; height: 55%; left: 8%; top: 6%;
+    background: radial-gradient(circle, rgba(255,70,180,0.9), transparent 65%); }
+  .footage .g2 { width: 55%; height: 60%; right: 4%; top: 22%;
+    background: radial-gradient(circle, rgba(70,170,255,0.85), transparent 65%); }
+  .footage .g3 { width: 40%; height: 40%; left: 34%; top: 44%;
+    background: radial-gradient(circle, rgba(160,107,255,0.85), transparent 60%); }
+  /* wet street reflection */
+  .footage .street {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 42%;
+    background:
+      linear-gradient(180deg, transparent, rgba(10,8,22,0.2) 20%, rgba(5,4,12,0.85) 100%),
+      repeating-linear-gradient(180deg, rgba(255,90,190,0.10) 0 2px, transparent 2px 10px);
+    transform: perspective(140px) rotateX(40deg); transform-origin: bottom;
+  }
+  /* falling rain */
+  .footage .rain {
+    position: absolute; inset: -20% -10%;
+    background-image: repeating-linear-gradient(101deg,
+      rgba(255,255,255,0.16) 0px, rgba(255,255,255,0.16) 1px,
+      transparent 1px, transparent 9px);
+    opacity: 0.5;
+  }
+  .footage .rain.r2 { opacity: 0.28;
+    background-image: repeating-linear-gradient(99deg,
+      rgba(200,220,255,0.20) 0px, rgba(200,220,255,0.20) 1px,
+      transparent 1px, transparent 14px); }
+  /* film grain (inline SVG turbulence, self-contained) */
+  .footage .grain {
+    position: absolute; inset: 0; opacity: 0.16; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 140px 140px;
+  }
+  /* a soft cinematic vignette + push-in light bar */
+  .footage .vig { position: absolute; inset: 0;
+    box-shadow: inset 0 0 60px 12px rgba(0,0,0,0.55); }
+  .footage .bar { position: absolute; top: -10%; bottom: -10%; width: 30%; left: 30%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+    filter: blur(8px); mix-blend-mode: screen; }
+
+  /* footage motion (independent fast loop). Paused when [data-still]. */
+  .footage[data-live] .fin    { animation: pushin 9s ease-in-out infinite alternate; }
+  .footage[data-live] .g1     { animation: drift1 11s ease-in-out infinite alternate; }
+  .footage[data-live] .g2     { animation: drift2 13s ease-in-out infinite alternate; }
+  .footage[data-live] .g3     { animation: drift3 10s ease-in-out infinite alternate; }
+  .footage[data-live] .rain   { animation: rainfall 0.9s linear infinite; }
+  .footage[data-live] .rain.r2{ animation: rainfall 1.3s linear infinite; }
+  .footage[data-live] .grain  { animation: grainflick 0.7s steps(3) infinite; }
+  .footage[data-live] .bar    { animation: barpan 7s ease-in-out infinite alternate; }
+  @keyframes pushin   { from { transform: scale(1); } to { transform: scale(1.16) translateY(-2%); } }
+  @keyframes drift1   { from { transform: translate(0,0); } to { transform: translate(6%, 4%); } }
+  @keyframes drift2   { from { transform: translate(0,0); } to { transform: translate(-7%, 3%); } }
+  @keyframes drift3   { from { transform: translate(0,0) scale(1); } to { transform: translate(3%, -4%) scale(1.1); } }
+  @keyframes rainfall { from { transform: translateY(-12%); } to { transform: translateY(12%); } }
+  @keyframes grainflick { from { transform: translate(0,0); } 33% { transform: translate(-3%,2%);} 66%{ transform: translate(2%,-3%);} to { transform: translate(0,0);} }
+  @keyframes barpan   { from { transform: translateX(-120%); } to { transform: translateX(220%); } }
+
+  /* ——— "Generating" overlays ——— */
+  .gen {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+    opacity: 0;            /* default = final frame (revealed). Animation reveals it during the "generating" beat. */
+    background: rgba(8,8,14,0.72);
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+    color: var(--muted); font-size: 12px; letter-spacing: 0.04em;
+  }
+  .gen .label { display: inline-flex; align-items: center; gap: 8px; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.18); border-top-color: var(--cyan);
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  /* shimmer sweep for the image "generating" state */
+  .shimmer { position: absolute; inset: 0; overflow: hidden; }
+  .shimmer::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 55%; left: -60%;
+    background: linear-gradient(90deg, transparent, rgba(92,198,255,0.18), transparent);
+    animation: sweep 1.3s ease-in-out infinite;
+  }
+  @keyframes sweep { to { left: 110%; } }
+  /* progress bar for the video "generating" state */
+  .prog { width: 72%; height: 5px; border-radius: 99px; background: rgba(255,255,255,0.12); overflow: hidden; }
+  .prog > i { display: block; height: 100%; width: 30%;
+    background: linear-gradient(90deg, var(--accent), var(--amber)); border-radius: 99px; }
+
+  /* ——— Wires (SVG overlay, drawn with dashoffset) ——— */
+  .wires { position: absolute; inset: 0; width: 1080px; height: 560px; pointer-events: none; overflow: visible; z-index: 2; }
+  .wire { fill: none; stroke: url(#wireGrad); stroke-width: 2.5; stroke-linecap: round;
+    filter: drop-shadow(0 0 4px rgba(108,92,255,0.5)); }
+  /* flowing pulse that travels along a drawn wire */
+  .pulse { fill: none; stroke: #cfc8ff; stroke-width: 2.5; stroke-linecap: round;
+    stroke-dasharray: 6 220; opacity: 0; }
+
+  /* ——— Premiere-style timeline ——— */
+  .timeline {
+    position: absolute; left: 8px; right: 8px; bottom: 0; width: 1064px; height: 168px;
+    background: linear-gradient(180deg, #101016, #0c0c11);
+    border: 1px solid var(--border); border-radius: 12px; overflow: hidden;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.35);
+  }
+  .tl-ruler {
+    position: relative; height: 26px; margin-left: 64px;
+    border-bottom: 1px solid var(--border-soft);
+    background: repeating-linear-gradient(90deg, transparent 0 79px, rgba(255,255,255,0.10) 79px 80px);
+    color: var(--muted-soft); font-size: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  .tl-ruler span { position: absolute; top: 7px; }
+  .tl-track { position: relative; height: 44px; margin-left: 64px; border-bottom: 1px solid var(--border-soft); }
+  .tl-track:last-child { border-bottom: 0; }
+  .tl-label {
+    position: absolute; left: 0; width: 64px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 600; color: var(--muted);
+    background: #0c0c12; border-right: 1px solid var(--border-soft);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .tl-rows { position: absolute; left: 0; right: 0; top: 26px; bottom: 0; }
+
+  /* the V1 clip (footage thumbnail snapped onto the track) */
+  .tl-clip {
+    position: absolute; top: 5px; height: 34px; left: 120px; width: 196px;
+    border-radius: 6px; overflow: hidden;
+    border: 1px solid #6c5cff;
+    box-shadow: 0 0 0 1px rgba(108,92,255,0.4), 0 6px 16px rgba(0,0,0,0.5);
+  }
+  .tl-clip .footage { filter: saturate(1.1); }
+  .tl-clip .cliplabel {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 1px 6px;
+    font-size: 9.5px; color: #fff; font-weight: 600;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,0.7));
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  /* audio waveform on A1 */
+  .tl-audio { position: absolute; top: 8px; height: 28px; left: 120px; width: 196px;
+    border-radius: 6px; background: #15233a; border: 1px solid #2b446b;
+    overflow: hidden; }
+  .tl-audio svg { width: 100%; height: 100%; display: block; }
+  /* playhead */
+  .playhead { position: absolute; top: 0; bottom: 0; left: 64px; width: 2px;
+    background: #ff5a6e; z-index: 6; }
+  .playhead::before { content: ""; position: absolute; top: -1px; left: -5px;
+    border-left: 6px solid transparent; border-right: 6px solid transparent;
+    border-top: 7px solid #ff5a6e; }
+
+  /* ——— Cursor + dragged clip ——— */
+  .cursor { position: absolute; left: 0; top: 0; width: 22px; height: 22px; z-index: 40;
+    opacity: 0; transform: translate(880px, 250px); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+  .drag-clip { position: absolute; left: 0; top: 0; width: 150px; height: 30px; z-index: 38;
+    border-radius: 6px; overflow: hidden; border: 1px solid #6c5cff; opacity: 0;
+    transform: translate(840px, 250px) rotate(-3deg) scale(0.96);
+    box-shadow: 0 14px 30px rgba(0,0,0,0.6); }
+
+  /* ============================================================
+     ANIMATION — pure CSS infinite keyframes on the master loop.
+     The DEFAULT (un-animated) styles above are the FINAL composed
+     frame; these keyframes play the intro and loop. Disable them
+     (reduced-motion / no-JS) and the static poster shows.
+     ============================================================ */
+  .anim #n-prompt          { animation: nodeIn var(--loop) ease both infinite; }
+  .anim #n-image           { animation: nodeIn var(--loop) ease both infinite; animation-delay: calc(var(--loop) * -0.0); }
+  .anim #n-video           { animation: nodeIn var(--loop) ease both infinite; }
+  .anim .prompt-text .typed{ animation: typed var(--loop) steps(40,end) both infinite; }
+
+  /* node entrances staggered via per-node keyframes (different reveal %) */
+  .anim #n-prompt { animation-name: inPrompt; }
+  .anim #n-image  { animation-name: inImage; }
+  .anim #n-video  { animation-name: inVideo; }
+
+  .anim #wire1      { animation: draw1 var(--loop) ease both infinite; }
+  .anim #wire2      { animation: draw2 var(--loop) ease both infinite; }
+  .anim #pulse1     { animation: pulse1 var(--loop) ease-in both infinite; }
+  .anim #pulse2     { animation: pulse2 var(--loop) ease-in both infinite; }
+
+  .anim #img-still  { animation: revealStill var(--loop) ease both infinite; }
+  .anim #img-gen    { animation: imgGen var(--loop) ease both infinite; }
+  .anim #img-isock  { animation: sockLit1 var(--loop) both infinite; }
+  .anim #prm-osock  { animation: sockLit1 var(--loop) both infinite; }
+
+  .anim #vid-still  { animation: revealVid var(--loop) ease both infinite; }
+  .anim #vid-gen    { animation: vidGen var(--loop) ease both infinite; }
+  .anim #vid-prog   { animation: vidProg var(--loop) ease both infinite; }
+  .anim #vid-isock  { animation: sockLit2 var(--loop) both infinite; }
+  .anim #img-osock  { animation: sockLit2 var(--loop) both infinite; }
+
+  .anim .cursor     { animation: cursorMove var(--loop) ease both infinite; }
+  .anim .drag-clip  { animation: dragMove var(--loop) ease both infinite; }
+  .anim .tl-clip    { animation: clipSnap var(--loop) ease both infinite; }
+  .anim .playhead   { animation: playhead var(--loop) linear both infinite; }
+  .anim .timeline   { animation: panelIn var(--loop) ease both infinite; }
+
+  /* node entrances (hidden at 0 + loop reset, visible across their span) */
+  @keyframes inPrompt {
+    0%, 2% { opacity: 0; transform: translateY(10px) scale(0.97); }
+    6%, 96% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(10px) scale(0.97); }
+  }
+  @keyframes inImage {
+    0%, 11% { opacity: 0; transform: translateY(10px) scale(0.97); }
+    16%, 96% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(10px) scale(0.97); }
+  }
+  @keyframes inVideo {
+    0%, 33% { opacity: 0; transform: translateY(10px) scale(0.97); }
+    39%, 96% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(10px) scale(0.97); }
+  }
+  @keyframes panelIn {
+    0%, 60% { opacity: 0; transform: translateY(24px); }
+    66%, 96% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: translateY(24px); }
+  }
+
+  /* prompt typing reveal (width clip) */
+  .prompt-text .typed { display: inline-block; overflow: hidden; white-space: nowrap; vertical-align: bottom; max-width: 100%; }
+  @keyframes typed { 0%,5%{ width: 0ch; } 12%,96%{ width: 31ch; } 100%{ width: 0ch; } }
+
+  /* wires draw (pathLength normalized to 100) */
+  @keyframes draw1 {
+    0%, 9% { stroke-dashoffset: 100; opacity: 0; }
+    9.01% { opacity: 1; }
+    15%, 96% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: 100; opacity: 0; }
+  }
+  @keyframes draw2 {
+    0%, 33% { stroke-dashoffset: 100; opacity: 0; }
+    33.01% { opacity: 1; }
+    39%, 96% { stroke-dashoffset: 0; opacity: 1; }
+    100% { stroke-dashoffset: 100; opacity: 0; }
+  }
+  /* data pulse traveling the wire after it draws */
+  @keyframes pulse1 {
+    0%, 15% { stroke-dashoffset: 226; opacity: 0; }
+    16% { opacity: 1; }
+    24% { stroke-dashoffset: 0; opacity: 1; }
+    26%, 100% { opacity: 0; }
+  }
+  @keyframes pulse2 {
+    0%, 39% { stroke-dashoffset: 226; opacity: 0; }
+    40% { opacity: 1; }
+    48% { stroke-dashoffset: 0; opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+  /* socket "lit" pulses while a connection is active */
+  @keyframes sockLit1 { 0%,9%{ box-shadow:none; } 12%,26%{ border-color: var(--accent); box-shadow: 0 0 10px rgba(108,92,255,0.8);} 30%,100%{ box-shadow:none;} }
+  @keyframes sockLit2 { 0%,39%{ box-shadow:none; } 42%,50%{ border-color: var(--accent); box-shadow: 0 0 10px rgba(108,92,255,0.8);} 54%,100%{ box-shadow:none;} }
+
+  /* image node: generating shimmer then reveal still */
+  @keyframes imgGen {
+    0%, 16% { opacity: 0; }
+    16.01%, 27% { opacity: 1; }
+    31%, 100% { opacity: 0; }
+  }
+  @keyframes revealStill {
+    0%, 27% { opacity: 0; transform: scale(1.06); }
+    32%, 96% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: scale(1.06); }
+  }
+  /* video node: generating + progress then reveal playing footage */
+  @keyframes vidGen {
+    0%, 40% { opacity: 0; }
+    40.01%, 52% { opacity: 1; }
+    56%, 100% { opacity: 0; }
+  }
+  @keyframes vidProg {
+    0%, 40% { transform: translateX(-110%); }
+    52% { transform: translateX(240%); }
+    100% { transform: translateX(240%); }
+  }
+  @keyframes revealVid {
+    0%, 52% { opacity: 0; transform: scale(1.05); }
+    57%, 96% { opacity: 1; transform: none; }
+    100% { opacity: 0; transform: scale(1.05); }
+  }
+
+  /* cursor: appear top-right, glide to the video clip, grab, drag to V1, release */
+  @keyframes cursorMove {
+    0%, 56% { opacity: 0; transform: translate(940px, 150px); }
+    58% { opacity: 1; transform: translate(900px, 250px); }
+    62% { opacity: 1; transform: translate(872px, 262px); }      /* over clip */
+    65% { opacity: 1; transform: translate(872px, 262px) scale(0.9); } /* grab */
+    76% { opacity: 1; transform: translate(212px, 506px) scale(0.9); } /* dropped on V1 */
+    80% { opacity: 1; transform: translate(212px, 506px); }
+    84% { opacity: 0; transform: translate(212px, 470px); }
+    100% { opacity: 0; transform: translate(940px, 150px); }
+  }
+  @keyframes dragMove {
+    0%, 64% { opacity: 0; transform: translate(848px, 250px) rotate(-3deg) scale(0.96); }
+    66% { opacity: 1; transform: translate(848px, 252px) rotate(-3deg) scale(1); }
+    75% { opacity: 1; transform: translate(150px, 498px) rotate(-2deg) scale(1); } /* arriving V1 */
+    78% { opacity: 0; transform: translate(120px, 500px) rotate(0deg) scale(1); }  /* hand-off to snapped clip */
+    100% { opacity: 0; transform: translate(848px, 250px) rotate(-3deg) scale(0.96); }
+  }
+  /* the real clip snaps in on V1 as the drag clip is released */
+  @keyframes clipSnap {
+    0%, 76% { opacity: 0; transform: scale(0.9); }
+    78% { opacity: 1; transform: scale(1.04); }
+    81%, 96% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.9); }
+  }
+  @keyframes playhead {
+    0%, 80% { transform: translateX(0); opacity: 0; }
+    80.01% { opacity: 1; }
+    94% { transform: translateX(360px); opacity: 1; }
+    96% { opacity: 1; }
+    100% { transform: translateX(360px); opacity: 0; }
+  }
+
+  /* ——— Copy: tagline + CTA. Resolves in ONCE on load, then stays. ——— */
+  .copy {
+    position: relative; z-index: 20; width: 100%; max-width: 760px;
+    margin: 0 auto; padding: 8px 28px 56px; text-align: center;
+  }
+  .copy h1 {
+    font-size: clamp(23px, 4.4vw, 48px); font-weight: 650; line-height: 1.07;
+    letter-spacing: -0.03em; margin: 0;
+    overflow-wrap: break-word; text-wrap: balance;
+  }
+  .copy h1 .grad {
+    background: linear-gradient(110deg, var(--accent), var(--accent-2) 60%, var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .copy p.sub {
+    font-size: clamp(14px, 1.9vw, 19px); color: var(--muted); font-weight: 400;
+    max-width: 34ch; margin: 16px auto 0; line-height: 1.5;
+  }
+  .cta-row { margin-top: 26px; display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 13px 26px; border-radius: 999px; font-weight: 600; font-size: 16px;
+    cursor: pointer; border: 1px solid transparent;
+    transition: transform .15s ease, filter .15s ease;
+  }
+  .btn-primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: #fff; box-shadow: 0 12px 34px rgba(108,92,255,0.45);
+  }
+  .btn-primary:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  .btn-ghost { color: var(--muted); }
+  .btn-ghost:hover { color: var(--text); }
+  .copy .pill {
+    display: inline-block; font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em;
+    color: var(--muted); background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 999px; padding: 4px 13px; margin-bottom: 16px; text-transform: uppercase;
+  }
+
+  /* copy entrance — one time, stays visible (so the CTA is always usable after) */
+  .anim .copy { animation: copyIn 1s ease 0.3s both; }
+  @keyframes copyIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  /* ——— Responsive ——— */
+  @media (max-width: 720px) {
+    .stagefit { padding-top: 64px; }
+    .copy { padding: 8px 20px 44px; }
+    .copy h1 { font-size: clamp(22px, 6.4vw, 34px); }
+    .copy p.sub { font-size: clamp(14px, 3.7vw, 17px); }
+    .lockup img { height: 22px; }
+    .lockup { top: 16px; left: 16px; }
+    .cta-row .btn { font-size: 15px; padding: 12px 22px; }
+  }
+
+  /* ——— Reduced motion: freeze everything, show the composed poster ——— */
+  @media (prefers-reduced-motion: reduce) {
+    .anim *, .anim { animation: none !important; }
+    .footage[data-live] * { animation: none !important; }
+    .playhead { opacity: 1; }
+    .copy { opacity: 1 !important; transform: none !important; }
+    .cursor, .drag-clip { display: none; }
+    /* defaults already represent the final frame; nothing else to do */
+  }
 </style>
 </head>
 <body>
-  <div class="box">
-    <p>Redirecting to the Spielboard beta…</p>
-    <a href="/beta">Go to the beta →</a>
+
+<div class="hero">
+  <!-- Brand lockup, top-left -->
+  <a class="lockup" href="/beta" aria-label="Spielboard">
+    <img src="/assets/logo-lockup.svg" alt="Spielboard"
+         onerror="this.closest('.lockup').classList.add('is-broken')" />
+    <span class="fallback">Spielboard</span>
+  </a>
+
+  <!-- Scaled scene: node graph + timeline + cursor -->
+  <div class="stagefit">
+    <div class="stagefit-inner">
+      <div class="scene" id="scene">
+
+        <!-- Wires under the nodes -->
+        <svg class="wires" viewBox="0 0 1080 560" preserveAspectRatio="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="wireGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#6c5cff"/>
+              <stop offset="1" stop-color="#5cc6ff"/>
+            </linearGradient>
+          </defs>
+          <!-- Prompt.out (260,180) -> Image.in (360,145) -->
+          <path id="wire1" class="wire" pathLength="100" d="M 260 180 C 312 180, 308 145, 360 145"/>
+          <path id="pulse1" class="pulse" d="M 260 180 C 312 180, 308 145, 360 145"/>
+          <!-- Image.out (608,145) -> Video.in (728,272) -->
+          <path id="wire2" class="wire" pathLength="100" d="M 608 145 C 678 145, 660 272, 728 272"/>
+          <path id="pulse2" class="pulse" d="M 608 145 C 678 145, 660 272, 728 272"/>
+        </svg>
+
+        <!-- Prompt node -->
+        <div class="node" id="n-prompt">
+          <div class="nhead"><span class="dot"></span> Prompt</div>
+          <div class="nbody">
+            <div class="prompt-text"><span class="typed">neon-lit alley, rain, cinematic, slow push-in</span><span class="caret"></span></div>
+          </div>
+          <span class="sock out" id="prm-osock"></span>
+        </div>
+
+        <!-- Image generation node -->
+        <div class="node" id="n-image">
+          <div class="nhead"><span class="dot"></span> Image generation</div>
+          <div class="nbody">
+            <div class="canvas-area">
+              <!-- revealed still (frozen footage) -->
+              <div class="footage" id="img-still">
+                <div class="fin">
+                  <div class="sky"></div>
+                  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+                  <div class="bar"></div>
+                  <div class="street"></div>
+                  <div class="rain"></div><div class="rain r2"></div>
+                </div>
+                <div class="grain"></div><div class="vig"></div>
+              </div>
+              <!-- generating shimmer overlay -->
+              <div class="gen" id="img-gen">
+                <div class="shimmer"></div>
+                <div class="label"><span class="spinner"></span> generating image…</div>
+              </div>
+            </div>
+          </div>
+          <span class="sock in"  id="img-isock"></span>
+          <span class="sock out" id="img-osock"></span>
+        </div>
+
+        <!-- Video generation node -->
+        <div class="node" id="n-video">
+          <div class="nhead"><span class="dot"></span> Video generation</div>
+          <div class="nbody">
+            <div class="video-area">
+              <!-- result video (live CSS footage) -->
+              <div class="footage" id="vid-still" data-live>
+                <div class="fin">
+                  <div class="sky"></div>
+                  <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+                  <div class="bar"></div>
+                  <div class="street"></div>
+                  <div class="rain"></div><div class="rain r2"></div>
+                </div>
+                <div class="grain"></div><div class="vig"></div>
+              </div>
+              <!-- generating + progress overlay -->
+              <div class="gen" id="vid-gen">
+                <div class="label">…generating video…</div>
+                <div class="prog"><i id="vid-prog"></i></div>
+              </div>
+            </div>
+          </div>
+          <span class="sock in" id="vid-isock"></span>
+        </div>
+
+        <!-- Premiere-style timeline -->
+        <div class="timeline">
+          <div class="tl-ruler">
+            <span style="left:6px">00:00</span>
+            <span style="left:86px">00:01</span>
+            <span style="left:166px">00:02</span>
+            <span style="left:246px">00:03</span>
+            <span style="left:326px">00:04</span>
+            <span style="left:406px">00:05</span>
+          </div>
+          <div class="tl-rows">
+            <div class="tl-track"><div class="tl-label">V2</div></div>
+            <div class="tl-track">
+              <div class="tl-label">V1</div>
+              <!-- snapped result clip -->
+              <div class="tl-clip">
+                <div class="footage" data-live>
+                  <div class="fin">
+                    <div class="sky"></div>
+                    <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+                    <div class="bar"></div>
+                    <div class="street"></div>
+                    <div class="rain"></div>
+                  </div>
+                  <div class="grain"></div><div class="vig"></div>
+                </div>
+                <div class="cliplabel">alley_push.mp4</div>
+              </div>
+            </div>
+            <div class="tl-track">
+              <div class="tl-label">A1</div>
+              <div class="tl-audio">
+                <svg viewBox="0 0 196 28" preserveAspectRatio="none">
+                  <path fill="#5cc6ff" fill-opacity="0.85" d="M0 14 L4 14 L4 9 L8 9 L8 18 L12 18 L12 5 L16 5 L16 21 L20 21 L20 11 L24 11 L24 16 L28 16 L28 7 L32 7 L32 19 L36 19 L36 12 L40 12 L40 15 L44 15 L44 8 L48 8 L48 20 L52 20 L52 6 L56 6 L56 22 L60 22 L60 10 L64 10 L64 17 L68 17 L68 13 L72 13 L72 9 L76 9 L76 19 L80 19 L80 7 L84 7 L84 21 L88 21 L88 12 L92 12 L92 16 L96 16 L96 8 L100 8 L100 20 L104 20 L104 11 L108 11 L108 15 L112 15 L112 6 L116 6 L116 22 L120 22 L120 13 L124 13 L124 9 L128 9 L128 18 L132 18 L132 5 L136 5 L136 21 L140 21 L140 11 L144 11 L144 16 L148 16 L148 8 L152 8 L152 19 L156 19 L156 12 L160 12 L160 15 L164 15 L164 9 L168 9 L168 20 L172 20 L172 7 L176 7 L176 18 L180 18 L180 13 L184 13 L184 10 L188 10 L188 17 L192 17 L192 14 L196 14 L196 28 L0 28 Z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+          <div class="playhead"></div>
+        </div>
+
+        <!-- Dragged clip (follows the cursor from video node -> V1) -->
+        <div class="drag-clip">
+          <div class="footage" data-live>
+            <div class="fin">
+              <div class="sky"></div>
+              <div class="glow g1"></div><div class="glow g2"></div><div class="glow g3"></div>
+              <div class="bar"></div>
+              <div class="street"></div>
+              <div class="rain"></div>
+            </div>
+            <div class="grain"></div><div class="vig"></div>
+          </div>
+        </div>
+
+        <!-- Mouse cursor -->
+        <svg class="cursor" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 3 L19 12 L12 13 L9 20 Z" fill="#ffffff" stroke="#0b0b0e" stroke-width="1.3" stroke-linejoin="round"/>
+        </svg>
+
+      </div>
+    </div>
   </div>
-  <script>
-    // JS fallback (replace() so the redirect doesn't add a history entry).
-    window.location.replace("/beta");
-  </script>
+
+  <!-- Tagline + CTA -->
+  <div class="copy">
+    <span class="pill">Private beta</span>
+    <h1>Generative video, <span class="grad">natively in your timeline.</span></h1>
+    <p class="sub">Node-based AI generation with native input/output to Premiere&nbsp;Pro, After&nbsp;Effects &amp; DaVinci&nbsp;Resolve.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="/beta">Get beta access →</a>
+      <a class="btn btn-ghost" href="/beta">See how it works</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var scene = document.getElementById("scene");
+  var hero = document.querySelector(".hero");
+  if (!scene) return;
+
+  var SCENE_W = 1080, SCENE_H = 560;
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Fit the fixed-size scene to its container width (keeps the graphic crisp).
+  var fit = scene.parentElement;            // .stagefit-inner
+  function rescale() {
+    var avail = hero.clientWidth;
+    // leave a little breathing room on the sides
+    var maxW = Math.min(avail - 24, 1080);
+    var scale = Math.max(0.26, Math.min(1, maxW / SCENE_W));
+    scene.style.setProperty("--scale", scale);
+    fit.style.width = (SCENE_W * scale) + "px";
+    fit.style.height = (SCENE_H * scale) + "px";
+  }
+  rescale();
+  window.addEventListener("resize", rescale, { passive: true });
+
+  // Start the animation only when motion is allowed. The default (un-animated)
+  // styles already compose the final poster frame, so reduced-motion = static.
+  if (!reduce) {
+    // Defer one frame so the initial (hidden) keyframe state paints cleanly.
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { scene.classList.add("anim"); });
+    });
+  }
+})();
+</script>
+
 </body>
 </html>
