@@ -5,9 +5,14 @@
 
   WHAT IT IS: a looping ~14s animated sequence teasing the differentiator —
   node-based generative video with native I/O straight into your editing
-  timeline. Prompt node -> wire -> image-gen node -> wire -> video-gen node, then
-  a cursor drags the result clip into a Premiere-style timeline (V2/V1/A1).
-  Tagline + CTA ("Get beta access ->", linking to /beta) resolve over it.
+  timeline. BEAT ORDER: Prompt node types in (caret blinks while typing, then
+  vanishes) -> a mouse cursor appears and PULLS a wire from the Prompt's output
+  socket to the Image node's input (the wire draws as it's dragged, mirroring the
+  app's drag-to-connect) -> Image generates/reveals a still -> the SAME cursor
+  pulls a second wire Image.out -> Video.in -> Video generates -> the result clip
+  plays -> the cursor drags that clip into a Premiere-style timeline where it
+  lands on V1 while a matching audio clip lands on A1 together (A1 is empty until
+  the drop). Tagline + CTA ("Get beta access ->", linking to /beta) resolve over it.
 
   TWO LAYOUTS, ONE FILE (responsive):
     • .scene-d  — DESKTOP / landscape: the wide horizontal node graph with the
@@ -15,13 +20,16 @@
     • .scene-p  — PORTRAIT / phone: the SAME horizontal line-up as desktop
                   (Prompt→Image→Video left-to-right with clean horizontal wires),
                   but the node row lives inside a clipping "camera" (.camera) and
-                  the row (.cam-row) is wider than the viewport. As each node is
-                  added the row translateX()-pans LEFT so the newest node centers
-                  in view and the previous ones slide off the left edge — a
-                  controlled camera, NOT page scroll (zero horizontal overflow).
-                  Nodes stay full-size so text stays legible; the timeline sits
-                  static below and the drag-into-timeline beat plays downward
-                  from the focused video node (shown < 760px wide).
+                  the row (.cam-row) is wider than the viewport. The camera pans
+                  LEFT (translateX, NOT page scroll) to follow the action through
+                  5 stops: each "centered" stop frames the active node, and each
+                  intermediate stop frames the SOURCE socket + the NEXT node's
+                  input together so the cursor can pull the connecting wire across
+                  the visible gap before the camera centers the new node. Nodes
+                  stay full-size so text stays legible; the timeline sits static
+                  below the camera and the clip-drag beat plays downward from the
+                  focused video node into V1/A1 (zero horizontal overflow; shown
+                  < 760px wide).
   Only ONE scene renders at a time (the other is display:none).
 
   REAL ASSETS (swap these to drop in real footage — see landing/README.md):
@@ -234,9 +242,15 @@
   .prompt-text .caret {
     display: inline-block; width: 7px; height: 14px; margin-left: 1px;
     vertical-align: -2px; background: var(--accent);
-    animation: blink 1s steps(1) infinite;
+    opacity: 0;   /* default = typing finished → no caret (static / reduced-motion frame) */
   }
-  @keyframes blink { 50% { opacity: 0; } }
+  /* Caret blinks ONLY while the prompt types in (≤12% of the loop), then vanishes
+     for the rest of the loop; it returns at the next loop's type-in. */
+  .anim .caret { animation: caretType var(--loop) steps(1, end) both infinite; }
+  @keyframes caretType {
+    0% { opacity: 1; } 3% { opacity: 0; } 6% { opacity: 1; } 9% { opacity: 0; } 11% { opacity: 1; }
+    12%, 100% { opacity: 0; }   /* typing done → caret gone */
+  }
 
   /* — "Generating" overlays (cover the media during the gen beat) — */
   .gen {
@@ -267,7 +281,9 @@
 
   /* — Wires (SVG overlay; solid bezier stroked in the source port's color) — */
   .wires { position: absolute; inset: 0; pointer-events: none; overflow: visible; z-index: 2; }
-  .wire { fill: none; stroke-width: 2.5; stroke-linecap: round; }
+  /* pathLength=100 + dasharray 100 lets stroke-dashoffset DRAW the wire (the
+     cursor pulls it from source socket to target during draw1/draw2). */
+  .wire { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 100; }
   .wire.text  { stroke: var(--port-text); }
   .wire.image { stroke: var(--port-image); }
   /* a faint travelling data pulse (teaser flourish) */
@@ -344,8 +360,8 @@
   .scene-d .tl-audio { top: 8px; height: 28px; left: 120px; width: 196px; }
   .scene-d .playhead { left: 64px; }
   .scene-d .drag-clip { width: 150px; height: 30px;
-    transform: translate(848px, 250px) rotate(-3deg) scale(0.96); }
-  .scene-d .cursor { transform: translate(940px, 150px); }
+    transform: translate(820px, 268px) rotate(-3deg) scale(0.96); }
+  .scene-d .cursor { transform: translate(300px, 120px); }
 
   /* ===========================================================
      PORTRAIT scene geometry (344×420) — horizontal line-up that
@@ -380,8 +396,8 @@
   .scene-p .tl-clip  { top: 5px; height: 30px; left: 64px; width: 150px; }
   .scene-p .tl-audio { top: 7px; height: 26px; left: 64px; width: 150px; }
   .scene-p .playhead { left: 44px; }
-  .scene-p .drag-clip { width: 130px; height: 28px; transform: translate(107px, 150px); }
-  .scene-p .cursor { transform: translate(210px, 150px); }
+  .scene-p .drag-clip { width: 130px; height: 28px; transform: translate(112px, 140px); }
+  .scene-p .cursor { transform: translate(210px, 95px); }
 
   /* ============================================================
      ANIMATION — pure CSS infinite keyframes on the master loop.
@@ -422,140 +438,177 @@
     6%, 96% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: translateY(10px) scale(0.97); }
   }
+  /* Nodes appear just as the cursor pulls a wire toward them. */
   @keyframes inImage {
-    0%, 11% { opacity: 0; transform: translateY(10px) scale(0.97); }
-    16%, 96% { opacity: 1; transform: none; }
+    0%, 13% { opacity: 0; transform: translateY(10px) scale(0.97); }
+    19%, 96% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: translateY(10px) scale(0.97); }
   }
   @keyframes inVideo {
-    0%, 33% { opacity: 0; transform: translateY(10px) scale(0.97); }
-    39%, 96% { opacity: 1; transform: none; }
+    0%, 38% { opacity: 0; transform: translateY(10px) scale(0.97); }
+    44%, 96% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: translateY(10px) scale(0.97); }
   }
   @keyframes panelIn {
     0%, 60% { opacity: 0; transform: translateY(24px); }
-    66%, 96% { opacity: 1; transform: none; }
+    67%, 96% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: translateY(24px); }
   }
-  @keyframes typed { 0%,5%{ width: 0; } 12%,96%{ width: 100%; } 100%{ width: 0; } }
+  @keyframes typed { 0%,4%{ width: 0; } 12%,96%{ width: 100%; } 100%{ width: 0; } }
 
+  /* Wire DRAWS as the cursor pulls it from source socket to target (draw1 16-24%,
+     draw2 41-48%) — the cursor keyframes traverse the same span/easing so the
+     cursor tip leads the wire tip. */
   @keyframes draw1 {
-    0%, 9% { stroke-dashoffset: 100; opacity: 0; }
-    9.01% { opacity: 1; }
-    15%, 96% { stroke-dashoffset: 0; opacity: 1; }
+    0%, 16% { stroke-dashoffset: 100; opacity: 0; }
+    16.01% { opacity: 1; }
+    24%, 96% { stroke-dashoffset: 0; opacity: 1; }
     100% { stroke-dashoffset: 100; opacity: 0; }
   }
   @keyframes draw2 {
-    0%, 33% { stroke-dashoffset: 100; opacity: 0; }
-    33.01% { opacity: 1; }
-    39%, 96% { stroke-dashoffset: 0; opacity: 1; }
+    0%, 41% { stroke-dashoffset: 100; opacity: 0; }
+    41.01% { opacity: 1; }
+    48%, 96% { stroke-dashoffset: 0; opacity: 1; }
     100% { stroke-dashoffset: 100; opacity: 0; }
   }
+  /* data pulse fires right AFTER the wire connects */
   @keyframes pulse1 {
-    0%, 15% { stroke-dashoffset: 226; opacity: 0; }
-    16% { opacity: 1; }
-    24% { stroke-dashoffset: 0; opacity: 1; }
-    26%, 100% { opacity: 0; }
+    0%, 25% { stroke-dashoffset: 226; opacity: 0; }
+    26% { opacity: 1; }
+    33% { stroke-dashoffset: 0; opacity: 1; }
+    35%, 100% { opacity: 0; }
   }
   @keyframes pulse2 {
-    0%, 39% { stroke-dashoffset: 226; opacity: 0; }
-    40% { opacity: 1; }
-    48% { stroke-dashoffset: 0; opacity: 1; }
-    50%, 100% { opacity: 0; }
+    0%, 49% { stroke-dashoffset: 226; opacity: 0; }
+    50% { opacity: 1; }
+    57% { stroke-dashoffset: 0; opacity: 1; }
+    59%, 100% { opacity: 0; }
   }
-  @keyframes sockLit1 { 0%,9%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35); } 12%,26%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 10px rgba(108,92,255,0.8);} 30%,100%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35);} }
-  @keyframes sockLit2 { 0%,39%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35); } 42%,50%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 10px rgba(108,92,255,0.8);} 54%,100%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35);} }
+  /* sockets glow as the connection lands */
+  @keyframes sockLit1 { 0%,22%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35); } 25%,31%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 10px rgba(108,92,255,0.8);} 35%,100%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35);} }
+  @keyframes sockLit2 { 0%,47%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35); } 50%,56%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 0 10px rgba(108,92,255,0.8);} 60%,100%{ box-shadow: 0 0 0 1px rgba(0,0,0,0.35);} }
 
   @keyframes imgGen {
-    0%, 16% { opacity: 0; }
-    16.01%, 27% { opacity: 1; }
-    31%, 100% { opacity: 0; }
+    0%, 25% { opacity: 0; }
+    25.01%, 33% { opacity: 1; }
+    37%, 100% { opacity: 0; }
   }
   @keyframes revealStill {
-    0%, 27% { opacity: 0; transform: scale(1.06); }
-    32%, 96% { opacity: 1; transform: none; }
+    0%, 33% { opacity: 0; transform: scale(1.06); }
+    38%, 96% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: scale(1.06); }
   }
   @keyframes vidGen {
-    0%, 40% { opacity: 0; }
-    40.01%, 52% { opacity: 1; }
-    56%, 100% { opacity: 0; }
+    0%, 50% { opacity: 0; }
+    50.01%, 59% { opacity: 1; }
+    63%, 100% { opacity: 0; }
   }
   @keyframes vidProg {
-    0%, 40% { transform: translateX(-110%); }
-    52% { transform: translateX(240%); }
+    0%, 50% { transform: translateX(-110%); }
+    60% { transform: translateX(240%); }
     100% { transform: translateX(240%); }
   }
   @keyframes revealVid {
-    0%, 52% { opacity: 0; transform: scale(1.05); }
-    57%, 96% { opacity: 1; transform: none; }
+    0%, 59% { opacity: 0; transform: scale(1.05); }
+    64%, 96% { opacity: 1; transform: none; }
     100% { opacity: 0; transform: scale(1.05); }
   }
+  /* V1 clip + A1 audio land together when the dragged clip drops */
   @keyframes clipSnap {
-    0%, 76% { opacity: 0; transform: scale(0.9); }
-    78% { opacity: 1; transform: scale(1.04); }
-    81%, 96% { opacity: 1; transform: scale(1); }
+    0%, 77% { opacity: 0; transform: scale(0.9); }
+    79% { opacity: 1; transform: scale(1.04); }
+    82%, 96% { opacity: 1; transform: scale(1); }
     100% { opacity: 0; transform: scale(0.9); }
   }
 
-  /* DESKTOP cursor/drag/playhead (1080×560 coords) */
+  /* DESKTOP cursor (1080×560 coords) — ONE continuous path: it pulls wire
+     Prompt.out→Image.in, then Image.out→Video.in, then grabs the result clip
+     and drags it into V1. The drag windows match draw1 (16-24%) / draw2 (41-48%)
+     so the cursor tip leads each wire as it draws. */
   @keyframes cursorMoveD {
-    0%, 56% { opacity: 0; transform: translate(940px, 150px); }
-    58% { opacity: 1; transform: translate(900px, 250px); }
-    62% { opacity: 1; transform: translate(872px, 262px); }
-    65% { opacity: 1; transform: translate(872px, 262px) scale(0.9); }
-    76% { opacity: 1; transform: translate(212px, 506px) scale(0.9); }
-    80% { opacity: 1; transform: translate(212px, 506px); }
-    84% { opacity: 0; transform: translate(212px, 470px); }
-    100% { opacity: 0; transform: translate(940px, 150px); }
+    0%, 10% { opacity: 0; transform: translate(300px, 120px); }
+    12% { opacity: 1; transform: translate(282px, 150px); }
+    16% { opacity: 1; transform: translate(254px, 156px); }            /* grab Prompt.out (260,160) */
+    17% { opacity: 1; transform: translate(254px, 156px) scale(0.9); } /* press */
+    24% { opacity: 1; transform: translate(354px, 141px) scale(0.9); } /* drag → Image.in (360,145) */
+    26% { opacity: 1; transform: translate(354px, 141px); }            /* release / connect */
+    39% { opacity: 1; transform: translate(602px, 141px); }            /* move to Image.out (608,145) */
+    40% { opacity: 1; transform: translate(602px, 141px) scale(0.9); } /* press */
+    48% { opacity: 1; transform: translate(722px, 268px) scale(0.9); } /* drag → Video.in (728,272) */
+    50% { opacity: 1; transform: translate(722px, 268px); }            /* release / connect */
+    65% { opacity: 1; transform: translate(872px, 296px); }            /* move to result clip */
+    67% { opacity: 1; transform: translate(872px, 296px) scale(0.9); } /* grab clip */
+    78% { opacity: 1; transform: translate(206px, 502px) scale(0.9); } /* drag clip → V1 */
+    81% { opacity: 1; transform: translate(206px, 472px); }            /* drop */
+    85% { opacity: 0; transform: translate(206px, 452px); }
+    100% { opacity: 0; transform: translate(300px, 120px); }
   }
   @keyframes dragMoveD {
-    0%, 64% { opacity: 0; transform: translate(848px, 250px) rotate(-3deg) scale(0.96); }
-    66% { opacity: 1; transform: translate(848px, 252px) rotate(-3deg) scale(1); }
-    75% { opacity: 1; transform: translate(150px, 498px) rotate(-2deg) scale(1); }
-    78% { opacity: 0; transform: translate(120px, 500px) rotate(0deg) scale(1); }
-    100% { opacity: 0; transform: translate(848px, 250px) rotate(-3deg) scale(0.96); }
+    0%, 66% { opacity: 0; transform: translate(820px, 268px) rotate(-3deg) scale(0.96); }
+    68% { opacity: 1; transform: translate(820px, 272px) rotate(-3deg) scale(1); }
+    78% { opacity: 1; transform: translate(150px, 498px) rotate(-2deg) scale(1); }
+    80% { opacity: 0; transform: translate(140px, 500px) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(820px, 268px) rotate(-3deg) scale(0.96); }
   }
   @keyframes playheadD {
-    0%, 80% { transform: translateX(0); opacity: 0; }
-    80.01% { opacity: 1; }
+    0%, 82% { transform: translateX(0); opacity: 0; }
+    82.01% { opacity: 1; }
     94% { transform: translateX(360px); opacity: 1; }
     96% { opacity: 1; }
     100% { transform: translateX(360px); opacity: 0; }
   }
 
-  /* PORTRAIT camera pan — the node row translates left so each newly-added
-     node centers in the 344px viewport (0 → -300 → -600). Each pan is timed
-     to coincide with that node's entrance, so the node slides into focus as
-     it appears and the previous node slides off the left edge. */
+  /* PORTRAIT camera pan —5 stops. Between the two "centered" stops the camera
+     settles on an INTERMEDIATE framing that shows the source socket on the left
+     and the next node's input on the right, so the cursor can pull the wire
+     across the visible gap; then it pans on to center the new node.
+       0    : Prompt centered (type-in)
+       -150 : Prompt.out + Image.in both visible  (wire pull 16-24%)
+       -300 : Image centered (gen/reveal)
+       -450 : Image.out + Video.in both visible   (wire pull 41-48%)
+       -600 : Video centered (gen, clip, drag) */
   @keyframes camPanP {
-    0%, 11% { transform: translateX(0); }       /* Prompt centered */
-    18%, 33% { transform: translateX(-300px); } /* Image centered, Prompt off-left */
-    40%, 100% { transform: translateX(-600px); }/* Video centered, focus for gen + drag */
+    0%, 13% { transform: translateX(0); }
+    16%, 25% { transform: translateX(-150px); }
+    31%, 37% { transform: translateX(-300px); }
+    42%, 49% { transform: translateX(-450px); }
+    54%, 100% { transform: translateX(-600px); }
   }
 
-  /* PORTRAIT cursor/drag/playhead — video node sits centered (viewport x≈172)
-     once the camera settles at -600; the drag pulls its clip DOWN into V1. */
+  /* PORTRAIT cursor — same continuous interaction in VIEWPORT coords. During each
+     wire pull the camera is settled so the two sockets sit at viewport x≈148→196;
+     after connecting it idles while the camera centers the node, then later grabs
+     the result clip and drags it DOWN into V1. (Cursor is outside the .camera so
+     it isn't clipped and can reach the timeline.) */
   @keyframes cursorMoveP {
-    0%, 56% { opacity: 0; transform: translate(210px, 150px); }
-    58% { opacity: 1; transform: translate(196px, 168px); }
-    62% { opacity: 1; transform: translate(178px, 176px); }
-    65% { opacity: 1; transform: translate(178px, 176px) scale(0.9); }
-    76% { opacity: 1; transform: translate(150px, 352px) scale(0.9); }
-    80% { opacity: 1; transform: translate(150px, 352px); }
-    84% { opacity: 0; transform: translate(150px, 338px); }
-    100% { opacity: 0; transform: translate(210px, 150px); }
+    0%, 10% { opacity: 0; transform: translate(210px, 95px); }
+    13% { opacity: 1; transform: translate(175px, 110px); }
+    16% { opacity: 1; transform: translate(142px, 116px); }            /* grab Prompt.out @-150 */
+    17% { opacity: 1; transform: translate(142px, 116px) scale(0.9); }
+    24% { opacity: 1; transform: translate(190px, 116px) scale(0.9); } /* drag → Image.in @-150 */
+    26% { opacity: 1; transform: translate(190px, 116px); }            /* release / connect */
+    34% { opacity: 1; transform: translate(150px, 120px); }            /* idle over Image (centering) */
+    40% { opacity: 1; transform: translate(142px, 116px); }            /* to Image.out @-450 */
+    41% { opacity: 1; transform: translate(142px, 116px) scale(0.9); }
+    48% { opacity: 1; transform: translate(190px, 146px) scale(0.9); } /* drag → Video.in @-450 */
+    50% { opacity: 1; transform: translate(190px, 146px); }            /* release / connect */
+    65% { opacity: 1; transform: translate(166px, 146px); }            /* to result clip @-600 */
+    67% { opacity: 1; transform: translate(166px, 146px) scale(0.9); } /* grab clip */
+    78% { opacity: 1; transform: translate(144px, 342px) scale(0.9); } /* drag clip → V1 */
+    81% { opacity: 1; transform: translate(144px, 322px); }            /* drop */
+    85% { opacity: 0; transform: translate(144px, 308px); }
+    100% { opacity: 0; transform: translate(210px, 95px); }
   }
   @keyframes dragMoveP {
-    0%, 64% { opacity: 0; transform: translate(107px, 150px) rotate(-3deg) scale(0.96); }
-    66% { opacity: 1; transform: translate(107px, 152px) rotate(-3deg) scale(1); }
-    75% { opacity: 1; transform: translate(110px, 338px) rotate(-1deg) scale(1); }
-    78% { opacity: 0; transform: translate(112px, 342px) rotate(0deg) scale(1); }
-    100% { opacity: 0; transform: translate(107px, 150px) rotate(-3deg) scale(0.96); }
+    0%, 66% { opacity: 0; transform: translate(112px, 140px) rotate(-3deg) scale(0.96); }
+    68% { opacity: 1; transform: translate(112px, 142px) rotate(-3deg) scale(1); }
+    78% { opacity: 1; transform: translate(110px, 332px) rotate(-1deg) scale(1); }
+    80% { opacity: 0; transform: translate(112px, 336px) rotate(0deg) scale(1); }
+    100% { opacity: 0; transform: translate(112px, 140px) rotate(-3deg) scale(0.96); }
   }
   @keyframes playheadP {
-    0%, 80% { transform: translateX(0); opacity: 0; }
-    80.01% { opacity: 1; }
+    0%, 82% { transform: translateX(0); opacity: 0; }
+    82.01% { opacity: 1; }
     94% { transform: translateX(150px); opacity: 1; }
     96% { opacity: 1; }
     100% { transform: translateX(150px); opacity: 0; }
