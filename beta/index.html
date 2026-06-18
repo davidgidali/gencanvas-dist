@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<!--
+  Spielboard — beta tester landing page (single self-contained file, no build).
+  Host on GitHub Pages of the PUBLIC davidgidali/gencanvas-dist repo at /beta/.
+  See README.md.
+
+  RENAMING THE PRODUCT (name may change): find/replace the token "Spielboard"
+  in this file. The things you might also touch:
+    1. Product name shown to users  -> the "Spielboard" text token
+    2. Dist repo in all links       -> "davidgidali/gencanvas-dist"
+    3. Download asset filenames      -> "spielboard-tester.zip" (CEP),
+                                        "spielboard-resolve.zip" (Resolve)
+    4. Logo                          -> drop assets/logo.svg (or .png) in;
+                                        see landing/assets/README.md. Until then
+                                        the CSS-gradient mark shows as fallback.
+  Mostly hardcoded so the page works offline / on Pages; disclosures use native
+  <details> (pure CSS). The ONE bit of script is the email gate in #download: it
+  POSTs the email to the telemetry Worker's /register route, which returns a
+  stable tester code and reveals the download links. If the Worker is unreachable
+  the gate shows an error + a fallback contact — nothing else on the page needs JS.
+
+  WORKER URL: the gate calls https://gencanvas-telemetry.gencanvas.workers.dev
+  (see GATE_WORKER in the <script> at the bottom). Same Worker as telemetry/reports.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spielboard — Beta Tester Download</title>
+<meta name="description" content="Download the Spielboard beta — a node-based generative-AI canvas inside Premiere Pro, After Effects, and DaVinci Resolve." />
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<style>
+  /* ——— Premium dark theme (brand is dark-dominant, to match the
+     Spielboard panel and the dark-only NLEs). Deep charcoal surfaces,
+     light-gray body text, crisp white headings, one indigo accent. ——— */
+  :root {
+    color-scheme: dark;
+    --bg: #0b0b0e;
+    --bg-soft: #16161c;
+    --bg-tint: #0f0f14;
+    --text: #f4f4f7;
+    --muted: #a6a6b2;
+    --muted-soft: #7e7e8a;
+    --border: #2a2a32;
+    --border-soft: #1c1c22;
+    --accent: #6c5cff;
+    --accent-2: #a06bff;
+    --accent-ink: #ffffff;
+    --link: #9d92ff;
+    --code-bg: #07070a;
+    --code-text: #e6e8f0;
+    --maxw: 1020px;
+    --radius: 18px;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 28px; }
+  .narrow { max-width: 740px; margin-left: auto; margin-right: auto; }
+
+  /* ——— Brand mark: drop landing/assets/logo.svg (or .png) in and it shows
+     here; until then the CSS gradient is the graceful fallback. The logo layer
+     sits on top of the gradient — when the file is absent that layer is simply
+     empty and the gradient shows through. No JS, no 404 noise. ——— */
+  .mark {
+    border-radius: 24%; flex: 0 0 auto; display: inline-block;
+    background-image: url('assets/logo.svg'), linear-gradient(135deg, var(--accent), var(--accent-2));
+    background-size: cover; background-position: center; background-repeat: no-repeat;
+    box-shadow: 0 10px 36px rgba(108, 92, 255, 0.35);
+  }
+  .mark-lg { width: 76px; height: 76px; }
+  .mark-sm { width: 22px; height: 22px; border-radius: 28%; box-shadow: none; }
+
+  /* ——— Hero lockup: David's horizontal mark + wordmark. White-ink SVG, so it
+     reads on the dark hero as-is. Width-driven, height auto keeps it crisp. ——— */
+  .hero-lockup {
+    display: block; width: clamp(260px, 42vw, 420px); height: auto;
+    margin: 0 auto 4px;
+  }
+  /* Nav brand is the horizontal lockup (mark + wordmark), not mark + text. */
+  .nav-lockup { display: block; height: 22px; width: auto; }
+
+  /* ——— Nav ——— */
+  nav.top {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  nav.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 52px; }
+  nav.top .brand { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 17px; color: var(--text); }
+  nav.top .brand:hover { text-decoration: none; }
+  nav.top .nav-dl { font-size: 14px; color: var(--link); font-weight: 500; }
+
+  /* ——— Hero ——— */
+  header.hero { text-align: center; padding: 96px 28px 88px; }
+  .pill {
+    display: inline-block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+    color: var(--muted); background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 999px; padding: 5px 14px; margin-bottom: 30px;
+  }
+  header.hero h1 {
+    font-size: clamp(40px, 7vw, 68px); font-weight: 600; line-height: 1.05;
+    letter-spacing: -0.03em; margin: 0 auto; max-width: 14ch;
+  }
+  header.hero h1 .grad {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  header.hero .lede {
+    font-size: clamp(18px, 2.4vw, 23px); font-weight: 400; color: var(--muted);
+    max-width: 30ch; margin: 26px auto 0; line-height: 1.45;
+  }
+  header.hero .cta { margin-top: 40px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  header.hero .fine { margin-top: 22px; font-size: 13px; color: var(--muted-soft); }
+
+  /* ——— Buttons ——— */
+  .btn {
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 13px 26px; border-radius: 980px; font-weight: 500; font-size: 17px;
+    border: 1px solid transparent; cursor: pointer; transition: transform .15s ease, filter .15s ease, background .15s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent-2));
+    color: var(--accent-ink); box-shadow: 0 12px 34px rgba(108, 92, 255, 0.4);
+  }
+  .btn-primary:hover { filter: brightness(1.05); transform: translateY(-1px); }
+  .btn-secondary { background: transparent; color: var(--link); border-color: transparent; }
+  .btn-secondary:hover { text-decoration: underline; }
+  .btn-arrow::after { content: " ›"; }
+
+  /* ——— Generic section rhythm ——— */
+  section { padding: 92px 0; }
+  .section-tint { background: var(--bg-tint); border-top: 1px solid var(--border-soft); border-bottom: 1px solid var(--border-soft); }
+  .eyebrow { font-size: 14px; font-weight: 600; color: var(--accent); letter-spacing: 0.01em; margin: 0 0 12px; text-align: center; }
+  h2.section-title { font-size: clamp(28px, 4vw, 42px); font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin: 0 auto; text-align: center; max-width: 18ch; }
+  .section-sub { font-size: clamp(17px, 2vw, 20px); color: var(--muted); text-align: center; max-width: 36ch; margin: 18px auto 0; line-height: 1.45; }
+
+  /* ——— Three calm feature blurbs ——— */
+  .features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 56px 40px; margin-top: 68px; }
+  .feature { text-align: center; }
+  .feature .ic { font-size: 30px; line-height: 1; margin-bottom: 16px; }
+  .feature h3 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 8px; }
+  .feature p { font-size: 16px; color: var(--muted); margin: 0; line-height: 1.5; }
+  @media (max-width: 760px) { .features { grid-template-columns: 1fr; gap: 44px; } }
+
+  /* ——— Downloads ——— */
+  .dl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 60px; }
+  @media (max-width: 760px) { .dl-grid { grid-template-columns: 1fr; } }
+  .dl-card {
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 34px 32px; display: flex; flex-direction: column; text-align: left;
+  }
+  .section-tint .dl-card { background: var(--bg-soft); }
+  .dl-card .kicker { font-size: 13px; font-weight: 600; color: var(--muted-soft); letter-spacing: 0.03em; text-transform: uppercase; margin: 0 0 10px; }
+  .dl-card h3 { font-size: 24px; font-weight: 600; letter-spacing: -0.01em; margin: 0 0 8px; }
+  .dl-card p { font-size: 15px; color: var(--muted); margin: 0 0 24px; line-height: 1.5; }
+  .dl-card .btn { align-self: flex-start; }
+  .dl-card .meta { margin-top: 18px; font-size: 13px; color: var(--muted-soft); }
+  .dl-all { text-align: center; margin-top: 40px; font-size: 16px; }
+
+  /* ——— Email gate (unlocks the downloads + reveals the tester code) ——— */
+  .gate { max-width: 520px; margin: 48px auto 0; text-align: center; }
+  .gate-form { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .gate-form input[type="email"] {
+    flex: 1 1 260px; min-width: 0;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: 980px;
+    padding: 13px 22px; color: var(--text); font-size: 16px; font-family: inherit;
+  }
+  .gate-form input[type="email"]::placeholder { color: var(--muted-soft); }
+  .gate-form input[type="email"]:focus { outline: none; border-color: var(--accent); }
+  .gate .btn[disabled] { opacity: 0.6; cursor: default; transform: none; }
+  .gate-privacy { margin: 16px 0 0; font-size: 13px; color: var(--muted-soft); }
+  .gate-error { margin: 14px auto 0; max-width: 440px; font-size: 14px; color: #ff8b94; line-height: 1.5; }
+  .gate-error a { color: inherit; text-decoration: underline; }
+
+  .code-block {
+    max-width: 560px; margin: 44px auto 0; text-align: center;
+    background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 30px 32px;
+  }
+  .code-block .kicker { font-size: 13px; font-weight: 600; color: var(--muted-soft); letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 16px; }
+  .code-row { display: flex; gap: 12px; align-items: center; justify-content: center; flex-wrap: wrap; }
+  .tester-code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 28px; font-weight: 600; letter-spacing: 0.14em; color: var(--text);
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 22px; user-select: all;
+  }
+  .code-hint { margin: 20px 0 0; font-size: 14px; color: var(--muted); line-height: 1.55; }
+  .code-hint strong { color: var(--text); font-weight: 600; }
+
+  /* ——— Get started / Good to know: quiet disclosures ——— */
+  details.disc {
+    border-top: 1px solid var(--border); padding: 4px 0;
+  }
+  details.disc:last-of-type { border-bottom: 1px solid var(--border); }
+  details.disc > summary {
+    list-style: none; cursor: pointer; padding: 26px 44px 26px 4px; position: relative;
+    font-size: 20px; font-weight: 500; letter-spacing: -0.01em; color: var(--text);
+  }
+  details.disc > summary::-webkit-details-marker { display: none; }
+  details.disc > summary::after {
+    content: "+"; position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    font-size: 26px; font-weight: 300; color: var(--muted); transition: transform .2s ease;
+  }
+  details.disc[open] > summary::after { content: "\2212"; }
+  details.disc > summary:hover { color: var(--accent); }
+  .disc-body { padding: 0 4px 30px; max-width: 760px; }
+  .disc-body p { font-size: 16px; color: var(--muted); margin: 0 0 14px; line-height: 1.6; }
+  .disc-body strong { color: var(--text); font-weight: 600; }
+  .disc-body a { color: var(--link); }
+
+  .sub-head { font-size: 15px; font-weight: 600; color: var(--text); margin: 22px 0 8px; }
+  ol.steps { counter-reset: step; list-style: none; margin: 0 0 8px; padding: 0; }
+  ol.steps li { counter-increment: step; position: relative; padding: 0 0 14px 38px; font-size: 16px; color: var(--muted); line-height: 1.55; }
+  ol.steps li strong { color: var(--text); }
+  ol.steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 1px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    color: var(--text); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+  code.inline {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.86em; background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 6px; padding: 1.5px 6px; color: var(--text);
+  }
+  pre {
+    background: var(--code-bg); color: var(--code-text);
+    border-radius: 12px; padding: 14px 16px; overflow-x: auto; margin: 10px 0 16px;
+    font-size: 13px; line-height: 1.55;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  pre code { color: inherit; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 8px 20px; font-size: 15px; margin: 6px 0 14px; }
+  .kv dt { color: var(--muted-soft); font-weight: 500; }
+  .kv dd { margin: 0; color: var(--text); }
+  ul.tidy { margin: 4px 0 14px; padding-left: 20px; }
+  ul.tidy li { font-size: 16px; color: var(--muted); margin: 6px 0; line-height: 1.5; }
+  ul.tidy li strong { color: var(--text); }
+
+  /* ——— Footer ——— */
+  footer { border-top: 1px solid var(--border-soft); padding: 56px 28px 72px; text-align: center; color: var(--muted); }
+  footer .links { display: flex; gap: 26px; justify-content: center; flex-wrap: wrap; font-size: 14px; margin: 0 0 22px; }
+  footer .links a { color: var(--muted); }
+  footer .fine { font-size: 13px; color: var(--muted-soft); max-width: 52ch; margin: 0 auto; line-height: 1.6; }
+  footer .copy { margin-top: 18px; font-size: 12px; color: var(--muted-soft); }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="wrap">
+    <a class="brand" href="#top"><img class="nav-lockup" src="assets/logo-lockup.svg" alt="Spielboard" /></a>
+    <a class="nav-dl" href="#download">Download</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <img class="hero-lockup" src="assets/logo-lockup.svg" alt="Spielboard" />
+  <div class="pill">Private Beta</div>
+  <h1>Generative AI, right <span class="grad">inside your editor.</span></h1>
+  <p class="lede">A node-based canvas for AI image and video — in Premiere Pro, After Effects, and DaVinci Resolve.</p>
+  <div class="cta">
+    <a class="btn btn-primary" href="#download">Get access</a>
+    <a class="btn btn-secondary btn-arrow" href="#download">How it works</a>
+  </div>
+  <p class="fine">Premiere&nbsp;Pro &amp; After&nbsp;Effects on Windows and macOS · DaVinci&nbsp;Resolve&nbsp;Studio on Windows</p>
+</header>
+
+<!-- ——— One idea: three calm feature blurbs ——— -->
+<section class="section-tint">
+  <div class="wrap">
+    <p class="eyebrow">One canvas, three editors</p>
+    <h2 class="section-title">Generate, wire, and drop into your timeline.</h2>
+    <div class="features">
+      <div class="feature">
+        <div class="ic">🧩</div>
+        <h3>Node-based canvas</h3>
+        <p>Compose generations by wiring nodes together — visual, repeatable, yours to remix.</p>
+      </div>
+      <div class="feature">
+        <div class="ic">✨</div>
+        <h3>Image &amp; video</h3>
+        <p>State-of-the-art models for stills and motion, running on your own fal.ai account.</p>
+      </div>
+      <div class="feature">
+        <div class="ic">🎬</div>
+        <h3>Right in your NLE</h3>
+        <p>Lives inside Premiere Pro, After Effects, and Resolve. Send results straight to the timeline.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ——— Downloads (email-gated) ——— -->
+<section id="download">
+  <div class="wrap">
+    <p class="eyebrow">Get access</p>
+    <h2 class="section-title">Enter your email to unlock.</h2>
+    <p class="section-sub">The beta is invite-only. Drop your email to get your tester code and the downloads.</p>
+
+    <!-- Email gate (visible by default; hidden after a successful register). -->
+    <div id="gate" class="gate">
+      <form id="gate-form" class="gate-form" novalidate>
+        <input id="gate-email" type="email" autocomplete="email" required placeholder="you@studio.com" aria-label="Email address" />
+        <button class="btn btn-primary" type="submit">Get access</button>
+      </form>
+      <p class="gate-privacy">🔒 We use your email only for beta access and support — never shared, no marketing.</p>
+      <p id="gate-error" class="gate-error" hidden></p>
+    </div>
+
+    <!-- Tester code (hidden until access is granted). -->
+    <div id="code-block" class="code-block" hidden>
+      <p class="kicker">Your tester code</p>
+      <div class="code-row">
+        <code id="tester-code" class="tester-code"></code>
+        <button id="copy-code" class="btn btn-secondary" type="button">Copy</button>
+      </div>
+      <p class="code-hint">Paste this into <strong>Spielboard → Settings → Tester code</strong> on first run — it's required to generate. Keep it handy; we've shown it here only this once.</p>
+    </div>
+
+    <!-- Downloads (hidden until access is granted). -->
+    <div id="downloads" hidden>
+      <div class="dl-grid">
+        <div class="dl-card">
+          <p class="kicker">Windows &amp; macOS</p>
+          <h3>Premiere &amp; After Effects</h3>
+          <p>The CEP panel for Adobe. Works in Premiere&nbsp;Pro and After&nbsp;Effects 2024+.</p>
+          <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-tester.zip">Download&nbsp;·&nbsp;spielboard-tester.zip</a>
+          <p class="meta">Windows 10/11 &amp; macOS 12+</p>
+        </div>
+        <div class="dl-card">
+          <p class="kicker">Windows</p>
+          <h3>DaVinci Resolve Studio</h3>
+          <p>The Workflow Integration plugin. Resolve <strong>Studio</strong> only — the free edition can’t load it.</p>
+          <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-resolve.zip">Download&nbsp;·&nbsp;spielboard-resolve.zip</a>
+          <p class="meta">Windows · Resolve for Mac — coming soon</p>
+        </div>
+      </div>
+      <p class="dl-all"><a class="btn-arrow" href="https://github.com/davidgidali/gencanvas-dist/releases/latest">All downloads &amp; release notes</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- ——— Get started: quiet disclosures ——— -->
+<section class="section-tint">
+  <div class="wrap narrow">
+    <p class="eyebrow">Get started</p>
+    <h2 class="section-title">A few minutes to set up.</h2>
+    <p class="section-sub">Everything you need, nothing you don’t. Expand a step when you reach it.</p>
+
+    <div style="margin-top:56px;">
+
+      <details class="disc">
+        <summary>Install the Adobe panel</summary>
+        <div class="disc-body">
+          <p>Unzip the tester package, run the installer for your OS, and restart your host. No admin required.</p>
+
+          <p class="sub-head">🪟 Windows</p>
+          <ol class="steps">
+            <li>Unzip <code class="inline">spielboard-tester.zip</code> anywhere.</li>
+            <li>Right-click <code class="inline">install-gencanvas.ps1</code> → <strong>Run with PowerShell</strong>. If Windows blocks it:
+              <pre><code>powershell -ExecutionPolicy Bypass -File .\install-gencanvas.ps1</code></pre>
+            </li>
+            <li>Fully restart Premiere&nbsp;Pro / After&nbsp;Effects.</li>
+            <li>Open <strong>Window → Extensions → Spielboard</strong>.</li>
+          </ol>
+
+          <p class="sub-head">🍎 macOS</p>
+          <ol class="steps">
+            <li>Unzip the tester package anywhere.</li>
+            <li>Double-click <code class="inline">install-gencanvas.command</code> (opens in Terminal). If Gatekeeper blocks it, right-click → Open, or:
+              <pre><code>xattr -d com.apple.quarantine ./install-gencanvas.command</code></pre>
+            </li>
+            <li>Fully quit &amp; restart Premiere&nbsp;Pro / After&nbsp;Effects.</li>
+            <li>Open <strong>Window → Extensions → Spielboard</strong>.</li>
+          </ol>
+        </div>
+      </details>
+
+      <details class="disc">
+        <summary>Install for DaVinci Resolve</summary>
+        <div class="disc-body">
+          <p>Resolve uses a Workflow Integration plugin (not a ZXP), and it’s <strong>Studio-only on Windows</strong> for now.</p>
+          <p>Download <code class="inline">spielboard-resolve.zip</code>, unzip it, then <strong>quit Resolve completely</strong> (it locks plugin files while open) and run:</p>
+          <pre><code>powershell -ExecutionPolicy Bypass -File .\install-resolve.ps1</code></pre>
+          <p>Click <strong>Yes</strong> at the UAC prompt (it writes into ProgramData). Then restart Resolve → <strong>Workspace → Workflow Integrations → Spielboard</strong>.</p>
+          <p><strong>macOS — coming soon.</strong> Resolve-for-Mac support is being finalized; on macOS use the Premiere&nbsp;/&nbsp;After&nbsp;Effects panel for now.</p>
+        </div>
+      </details>
+
+      <details class="disc">
+        <summary>Add your fal.ai API key</summary>
+        <div class="disc-body">
+          <p>Every generation runs on <strong>your</strong> fal.ai account, so you supply the key.</p>
+          <ol class="steps">
+            <li>Create a key at <a href="https://fal.ai/dashboard/keys">fal.ai/dashboard/keys</a> and make sure your account has <strong>billing credit</strong>. (A fal key looks like <code class="inline">key-id:secret</code>.)</li>
+            <li>In the Spielboard panel, click <strong>Settings</strong> (top-right).</li>
+            <li>Paste the key into <strong>fal.ai API key</strong> and click <strong>Save</strong>.</li>
+          </ol>
+          <p class="sub-head">Where your key lives</p>
+          <p>Stored <strong>locally only</strong>, readable just by you:</p>
+          <dl class="kv">
+            <dt>Windows</dt><dd><code class="inline">Documents\Spielboard\settings.json</code></dd>
+            <dt>macOS</dt><dd><code class="inline">~/Documents/Spielboard/settings.json</code></dd>
+          </dl>
+          <p>It’s never sent anywhere except fal.ai, and it’s never included in bug reports.</p>
+        </div>
+      </details>
+
+      <details class="disc">
+        <summary>“Unverified extension” warning?</summary>
+        <div class="disc-body">
+          <p>The beta panel is self-signed with our own dev certificate — that’s expected. CEP checks a panel’s <strong>integrity</strong>, not who issued the cert, so Spielboard loads normally once installed. There’s nothing extra to “trust.”</p>
+        </div>
+      </details>
+
+      <details class="disc">
+        <summary>System requirements</summary>
+        <div class="disc-body">
+          <p class="sub-head">Host editor</p>
+          <ul class="tidy">
+            <li><strong>Premiere&nbsp;Pro 2024+</strong> (CEP panel) — Windows &amp; macOS</li>
+            <li><strong>After&nbsp;Effects 2024+</strong> (CEP panel) — Windows &amp; macOS</li>
+            <li><strong>DaVinci&nbsp;Resolve Studio</strong> (Workflow Integration — the free edition can’t load it) — Windows; macOS coming soon</li>
+          </ul>
+          <p class="sub-head">Platform</p>
+          <ul class="tidy">
+            <li><strong>Windows 10 / 11</strong> — Premiere&nbsp;/&nbsp;After&nbsp;Effects <em>and</em> Resolve&nbsp;Studio</li>
+            <li><strong>macOS 12+</strong> — Premiere&nbsp;/&nbsp;After&nbsp;Effects (Resolve for macOS coming soon)</li>
+          </ul>
+          <p class="sub-head">Account &amp; cost</p>
+          <ul class="tidy">
+            <li>A <strong>fal.ai API key</strong> with billing credit. Generations run on your key: image ≈ $0.01–0.08, video ≈ $0.50+ per run.</li>
+            <li>Optional: <code class="inline">ffmpeg</code> — only for “Pull frame / Pull clip” from the timeline.</li>
+          </ul>
+          <p>The panel installs per-user and is self-signed for the beta — no admin needed.</p>
+        </div>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="https://github.com/davidgidali/gencanvas-dist/issues/new?labels=bug&amp;title=%5Bbug%5D%20">Report a bug</a>
+      <a href="https://github.com/davidgidali/gencanvas-dist/issues/new?labels=enhancement&amp;title=%5Bfeature%5D%20">Request a feature</a>
+      <a href="https://github.com/davidgidali/gencanvas-dist/issues">Browse issues</a>
+      <a href="https://github.com/davidgidali/gencanvas-dist/releases/latest">Releases</a>
+    </div>
+    <p class="fine">The fastest fixes come from the in-panel <strong>Report bug</strong> button — it prefills everything, and nothing is sent until you submit. Generations cost real money on your own fal.ai account, so keep an eye on usage.</p>
+    <p class="copy">Spielboard · Private beta. Thanks for helping shape it.</p>
+  </div>
+</footer>
+
+<!-- ——— Email gate: POST email → Worker /register → reveal code + downloads ———
+     The ONLY script on the page. Degrades gracefully: any failure shows an inline
+     error with a fallback contact; the downloads simply stay locked. -->
+<script>
+(function () {
+  "use strict";
+  // Same Worker as telemetry/reports — the /register route mints a stable code.
+  var GATE_WORKER = "https://gencanvas-telemetry.gencanvas.workers.dev";
+  var CONTACT = "david.gidali@gmail.com";
+
+  var form = document.getElementById("gate-form");
+  if (!form) return;
+  var emailEl = document.getElementById("gate-email");
+  var errEl = document.getElementById("gate-error");
+  var gate = document.getElementById("gate");
+  var codeBlock = document.getElementById("code-block");
+  var downloads = document.getElementById("downloads");
+  var codeEl = document.getElementById("tester-code");
+  var copyBtn = document.getElementById("copy-code");
+
+  function showError(html) {
+    errEl.innerHTML = html;
+    errEl.hidden = false;
+  }
+  function contactSuffix() {
+    return ' If this keeps happening, email <a href="mailto:' + CONTACT + '">' + CONTACT + "</a>.";
+  }
+  function reveal(code) {
+    codeEl.textContent = code;
+    gate.hidden = true;
+    codeBlock.hidden = false;
+    downloads.hidden = false;
+    codeBlock.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    errEl.hidden = true;
+    var email = (emailEl.value || "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError("Please enter a valid email address.");
+      return;
+    }
+    var btn = form.querySelector("button");
+    var orig = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Working…";
+
+    fetch(GATE_WORKER + "/register", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      mode: "cors",
+      body: JSON.stringify({ email: email })
+    })
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (d) {
+          return { status: r.status, data: d };
+        });
+      })
+      .then(function (res) {
+        if (res.data && typeof res.data.code === "string" && res.data.code) {
+          reveal(res.data.code);
+        } else if (res.status === 429) {
+          showError("Too many attempts — please wait a minute and try again.");
+        } else {
+          var msg = res.data && res.data.error ? res.data.error : "Something went wrong";
+          showError(msg.charAt(0).toUpperCase() + msg.slice(1) + "." + contactSuffix());
+        }
+      })
+      .catch(function () {
+        showError("Couldn't reach the server — check your connection." + contactSuffix());
+      })
+      .then(function () {
+        btn.disabled = false;
+        btn.textContent = orig;
+      });
+  });
+
+  if (copyBtn) {
+    copyBtn.addEventListener("click", function () {
+      var code = codeEl.textContent || "";
+      var done = function () {
+        copyBtn.textContent = "Copied ✓";
+        setTimeout(function () { copyBtn.textContent = "Copy"; }, 2000);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(done, done);
+      } else {
+        // Fallback: select the code so the user can copy manually.
+        var range = document.createRange();
+        range.selectNodeContents(codeEl);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        done();
+      }
+    });
+  }
+})();
+</script>
+
+</body>
+</html>
