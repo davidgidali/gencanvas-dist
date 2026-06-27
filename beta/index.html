@@ -421,7 +421,7 @@
     <a class="btn btn-primary" href="#download">Get access</a>
     <a class="btn btn-secondary btn-arrow" href="#download">How it works</a>
   </div>
-  <p class="fine">Premiere&nbsp;Pro &amp; After&nbsp;Effects on Windows and macOS · DaVinci&nbsp;Resolve&nbsp;Studio on Windows</p>
+  <p class="fine">Premiere&nbsp;Pro &amp; After&nbsp;Effects on Windows and macOS · DaVinci&nbsp;Resolve&nbsp;Studio on Windows and macOS</p>
 
   <!-- ——— STATIC product-teaser decoration (frozen node graph + Premiere
        timeline, reused from the teaser homepage). Pure texture under the hero
@@ -574,11 +574,11 @@
           <p class="meta">macOS 12+ — notarized, just double-click · Windows 10/11 — unzip &amp; run</p>
         </div>
         <div class="dl-card">
-          <p class="kicker">Windows</p>
+          <p class="kicker">Windows &amp; macOS</p>
           <h3>DaVinci Resolve Studio</h3>
           <p>The Workflow Integration plugin. Resolve <strong>Studio</strong> only — the free edition can’t load it.</p>
           <a class="btn btn-primary" href="https://github.com/davidgidali/gencanvas-dist/releases/latest/download/spielboard-resolve.zip">Download&nbsp;·&nbsp;spielboard-resolve.zip</a>
-          <p class="meta">Windows · Resolve for Mac — coming soon</p>
+          <p class="meta">One zip for both — Windows: run <code class="inline">install-resolve.ps1</code> · macOS: run <code class="inline">install-resolve.command</code></p>
         </div>
       </div>
       <p class="dl-all"><a class="btn-arrow" href="https://github.com/davidgidali/gencanvas-dist/releases/latest">All downloads &amp; release notes</a></p>
@@ -623,11 +623,26 @@
       <details class="disc">
         <summary>Install for DaVinci Resolve</summary>
         <div class="disc-body">
-          <p>Resolve uses a Workflow Integration plugin (not a ZXP), and it’s <strong>Studio-only on Windows</strong> for now.</p>
-          <p>Download <code class="inline">spielboard-resolve.zip</code>, unzip it, then <strong>quit Resolve completely</strong> (it locks plugin files while open) and run:</p>
-          <pre><code>powershell -ExecutionPolicy Bypass -File .\install-resolve.ps1</code></pre>
-          <p>Click <strong>Yes</strong> at the UAC prompt (it writes into ProgramData). Then restart Resolve → <strong>Workspace → Workflow Integrations → Spielboard</strong>.</p>
-          <p><strong>macOS — coming soon.</strong> Resolve-for-Mac support is being finalized; on macOS use the Premiere&nbsp;/&nbsp;After&nbsp;Effects panel for now.</p>
+          <p>Resolve uses a Workflow Integration plugin (not a ZXP), and it’s <strong>Studio-only</strong> — the free edition can’t load it. The same <code class="inline">spielboard-resolve.zip</code> holds both installers; <strong>quit Resolve completely first</strong> (it locks plugin files while open).</p>
+
+          <p class="sub-head">🪟 Windows</p>
+          <ol class="steps">
+            <li>Unzip <code class="inline">spielboard-resolve.zip</code> anywhere, then run:
+              <pre><code>powershell -ExecutionPolicy Bypass -File .\install-resolve.ps1</code></pre>
+            </li>
+            <li>Click <strong>Yes</strong> at the UAC prompt (it writes into ProgramData).</li>
+            <li>Restart Resolve → <strong>Workspace → Workflow Integrations → Spielboard</strong>.</li>
+          </ol>
+
+          <p class="sub-head">🍎 macOS</p>
+          <ol class="steps">
+            <li>Unzip <code class="inline">spielboard-resolve.zip</code>, then in Terminal run from that folder:
+              <pre><code>bash ./install-resolve.command</code></pre>
+            </li>
+            <li>Enter your password when asked — it installs into Resolve’s system plugins folder (<code class="inline">/Library/Application&nbsp;Support/Blackmagic&nbsp;Design/…</code>), which is the only path macOS Resolve scans.</li>
+            <li>Restart Resolve → <strong>Workspace → Workflow Integrations → Spielboard</strong>.</li>
+          </ol>
+          <p><em>Heads-up:</em> on macOS this is a <strong>manual install</strong> (unzip + run the <code class="inline">.command</code>), not a one-click <code class="inline">.pkg</code> like the Adobe panel — it stages the plugin and needs your password to write into the system folder.</p>
         </div>
       </details>
 
@@ -664,12 +679,12 @@
           <ul class="tidy">
             <li><strong>Premiere&nbsp;Pro 2024+</strong> (CEP panel) — Windows &amp; macOS</li>
             <li><strong>After&nbsp;Effects 2024+</strong> (CEP panel) — Windows &amp; macOS</li>
-            <li><strong>DaVinci&nbsp;Resolve Studio</strong> (Workflow Integration — the free edition can’t load it) — Windows; macOS coming soon</li>
+            <li><strong>DaVinci&nbsp;Resolve Studio</strong> (Workflow Integration — the free edition can’t load it) — Windows &amp; macOS</li>
           </ul>
           <p class="sub-head">Platform</p>
           <ul class="tidy">
             <li><strong>Windows 10 / 11</strong> — Premiere&nbsp;/&nbsp;After&nbsp;Effects <em>and</em> Resolve&nbsp;Studio</li>
-            <li><strong>macOS 12+</strong> — Premiere&nbsp;/&nbsp;After&nbsp;Effects (Resolve for macOS coming soon)</li>
+            <li><strong>macOS 12+</strong> — Premiere&nbsp;/&nbsp;After&nbsp;Effects <em>and</em> Resolve&nbsp;Studio</li>
           </ul>
           <p class="sub-head">Account &amp; cost</p>
           <ul class="tidy">
